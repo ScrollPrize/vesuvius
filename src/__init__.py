@@ -2,6 +2,9 @@ import os
 import sys
 import site
 
+__all__ = ["volume"]
+from . import volume
+
 def check_agreement():
     install_path = site.getsitepackages()[-1]
     agreement_file_path = os.path.join(install_path, 'vesuvius', 'setup', 'agreement.txt')
@@ -21,3 +24,5 @@ def check_agreement():
 
 # Check agreement on import
 check_agreement()
+
+from .volume import Scroll
