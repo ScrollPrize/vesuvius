@@ -1,1 +1,1 @@
-include vesuvius/configs/scrolls.yaml
+include src/configs/scrolls.yaml
