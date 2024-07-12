@@ -3,10 +3,21 @@ import yaml
 import site
 import tensorstore as ts
 from numpy.typing import NDArray
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
+import numpy as np
 
+# Function to get the maximum value of a dtype
+def get_max_value(dtype: np.dtype) -> Union[float, int]:
+    if np.issubdtype(dtype, np.floating):
+        max_value = np.finfo(dtype).max
+    elif np.issubdtype(dtype, np.integer):
+        max_value = np.iinfo(dtype).max
+    else:
+        raise ValueError("Unsupported dtype")
+    return max_value
+    
 class Volume:
-    def __init__(self, type: str, scroll_id: int, energy: int, resolution: float, segment_id: Optional[int] = None, cache: bool = False) -> None:
+    def __init__(self, type: str, scroll_id: int, energy: int, resolution: float, segment_id: Optional[int] = None, cache: bool = False, normalize: bool = False) -> None:
         assert type in ["scroll", "segment"], "type should be either 'scroll' or 'segment'"
         self.type = type
 
@@ -22,8 +33,11 @@ class Volume:
         self.resolution = resolution
         self.url = self.get_url_from_yaml()
         self.cache = cache
+        self.normalize = normalize
 
         self.data = self.load_data()
+        if self.normalize:
+            self.max_dtype = get_max_value(self.data.dtype.numpy_dtype)
     
     def get_url_from_yaml(self) -> str:
         # Load the YAML file
@@ -80,7 +94,13 @@ class Volume:
     def __getitem__(self, idx: Tuple[int, int, int]) -> NDArray:
         if isinstance(idx, tuple) and len(idx) == 3:
             x, y, z = idx
-            return self.data[x, y, z].read().result()
+
+            if self.normalize:
+                return self.data[x, y, z].read().result()/self.max_dtype
+            
+            else:
+                return self.data[x,y,z].read().result()
+            
         else:
             raise IndexError("Invalid index. Must be a tuple of three elements.")
     
