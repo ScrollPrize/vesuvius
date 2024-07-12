@@ -38,7 +38,10 @@ class Volume:
         self.data = self.load_data()
         if self.normalize:
             self.max_dtype = get_max_value(self.data.dtype.numpy_dtype)
-    
+
+        self.shape = self.data.shape
+        self.dtype = self.data.dtype.numpy_dtype
+        
     def get_url_from_yaml(self) -> str:
         # Load the YAML file
         with open(self.configs, 'r') as file:
@@ -91,7 +94,7 @@ class Volume:
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir'''
     
-    def __getitem__(self, idx: Tuple[int, int, int]) -> NDArray:
+    def __getitem__(self, idx: Tuple[int, ...]) -> NDArray:
         if isinstance(idx, tuple) and len(idx) == 3:
             x, y, z = idx
 
@@ -113,3 +116,4 @@ class Volume:
         if self.cache:
             self.cache = False
             self.data = self.load_data()
+
