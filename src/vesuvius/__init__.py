@@ -2,8 +2,9 @@ import os
 import sys
 import site
 
-__all__ = ["volume"]
-from . import volume
+from .volume import Volume
+from .volume_2 import Volume2
+__all__ = ["Volume", "Volume2"]
 
 def check_agreement():
     install_path = site.getsitepackages()[-1]
@@ -24,5 +25,3 @@ def check_agreement():
 
 # Check agreement on import
 check_agreement()
-
-from .volume import Scroll
