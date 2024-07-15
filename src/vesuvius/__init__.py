@@ -2,9 +2,9 @@ import os
 import sys
 import site
 
-from .volume import Volume
+from .volume import Volume, Cube
 from .volume_2 import Volume2
-__all__ = ["Volume", "Volume2"]
+__all__ = ["Volume", "Volume2", "Cube"]
 
 def check_agreement():
     install_path = site.getsitepackages()[-1]
