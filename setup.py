@@ -31,6 +31,8 @@ setup(
         'tensorstore',
         'zarr',
         'tqdm',
+        'lxml',
+        'nest_asyncio'
     ],
     python_requires='>=3.8',
     include_package_data=True,
