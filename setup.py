@@ -21,12 +21,22 @@ class CustomInstallCommand(install):
 setup(
     name='vesuvius',
     version='0.1',
-    packages=find_packages(),
+    package_dir = {"": "src"},
+    packages=find_packages(where="src"),
     install_requires=[
-        # Add your dependencies here
+        'numpy',
+        'requests',
+        'aiohttp',
+        'fsspec',
+        'tensorstore',
+        'zarr',
+        'tqdm',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     include_package_data=True,
+    package_data={
+        '': ['src/vesuvius/configs/*.yaml'],
+    },
     entry_points={
         'console_scripts': [
             'vesuvius.accept_terms=vesuvius.setup.accept_terms:main',

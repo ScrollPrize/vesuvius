@@ -2,6 +2,10 @@ import os
 import sys
 import site
 
+from .volume import Volume, Cube
+from .volume_2 import Volume2
+__all__ = ["Volume", "Volume2", "Cube"]
+
 def check_agreement():
     install_path = site.getsitepackages()[-1]
     agreement_file_path = os.path.join(install_path, 'vesuvius', 'setup', 'agreement.txt')
