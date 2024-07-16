@@ -5,8 +5,9 @@ import site
 from .volume import Volume, Cube
 from .volume_2 import Volume2
 from .paths.utils import update_list
+from .paths.utils import list_files as list
 
-__all__ = ["Volume", "Volume2", "Cube"]
+__all__ = ["Volume", "Volume2", "Cube", "list"]
 
 def check_agreement():
     install_path = site.getsitepackages()[-1]
