@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 from typing import Any, Dict, Optional, Tuple, Union, List
 import numpy as np
 import requests
+import zarr
 
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
@@ -18,7 +19,7 @@ def get_max_value(dtype: np.dtype) -> Union[float, int]:
     return max_value
     
 class Volume:
-    def __init__(self, type: str, scroll_id: int, energy: int, resolution: float, segment_id: Optional[int] = None, cache: bool = False, normalize: bool = False, verbose : bool = True) -> None:
+    def __init__(self, type: str, scroll_id: int, energy: int, resolution: float, segment_id: Optional[int] = None, cache: bool = False, normalize: bool = False, verbose : bool = True, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
         assert type in ["scroll", "segment"], "type should be either 'scroll' or 'segment'"
         self.type = type
 
@@ -28,17 +29,34 @@ class Volume:
         else:
             self.segment_id = None
 
+        assert domain in ["dl.ash2txt", "local"], "domain should be dl.ash2txt or local"
+
+        if domain == "local":
+            assert path is not None
+
         self.scroll_id = scroll_id
         self.configs = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'scrolls.yaml')
         self.energy = energy
         self.resolution = resolution
-        self.url = self.get_url_from_yaml()
-        self.metadata = self.load_ome_metadata()
+        self.domain = domain
         self.cache = cache
         self.normalize = normalize
         self.verbose = verbose
 
-        self.data = self.load_data()
+        if self.domain == "dl.ash2txt":
+            self.url = self.get_url_from_yaml()
+            self.metadata = self.load_ome_metadata()
+            self.data = self.load_data()
+            if self.normalize:
+                self.max_dtype = get_max_value(self.data[0].dtype.numpy_dtype)
+            self.dtype = self.data[0].dtype.numpy_dtype
+        elif self.domain == "local":
+            self.url = path
+            self.data = zarr.open(self.url, mode="r")
+            self.metadata = self.load_ome_metadata()
+            if self.normalize:
+                self.max_dtype = get_max_value(self.data[0].dtype)
+            self.dtype = self.data[0].dtype
 
         if self.verbose:
             # Assuming the first dataset is the original resolution
@@ -55,10 +73,6 @@ class Volume:
                 scaled_resolution = self.resolution * scale_factors[0]
                 print(f"Contains also data with scaled resolution: {scaled_resolution} mum, subvolume idx: {idx}, shape: {self.shape(idx)}")
 
-        if self.normalize:
-            self.max_dtype = get_max_value(self.data[0].dtype.numpy_dtype)
-
-        self.dtype = self.data[0].dtype.numpy_dtype
         
     def get_url_from_yaml(self) -> str:
         # Load the YAML file
@@ -83,21 +97,17 @@ class Volume:
     
     def load_ome_metadata(self) -> None:
         try:
-            # Load the .zattrs metadata
-            zattrs_url = f"{self.url}/.zattrs"
-            zattrs_response = requests.get(zattrs_url)
-            zattrs_response.raise_for_status()
-            zattrs = zattrs_response.json()
+            if self.domain == "dl.ash2txt":
+                # Load the .zattrs metadata
+                zattrs_url = f"{self.url}/.zattrs"
+                zattrs_response = requests.get(zattrs_url)
+                zattrs_response.raise_for_status()
+                zattrs = zattrs_response.json()
 
-            # Load the .zgroup metadata
-            zgroup_url = f"{self.url}/.zgroup"
-            zgroup_response = requests.get(zgroup_url)
-            zgroup_response.raise_for_status()
-            zgroup = zgroup_response.json()
-            
+            elif self.domain == "local":
+                zattrs = dict(self.data.attrs)
             return {
                 "zattrs": zattrs,
-                "zgroup": zgroup
             }
         except requests.RequestException as e:
             print(f"Error loading metadata: {e}")
@@ -116,7 +126,7 @@ class Volume:
         sub_volumes = []
         for dataset in self.metadata['zattrs']['multiscales'][0]['datasets']:
             path = dataset['path']
-            sub_url = f"{self.url}/{path}/"
+            sub_url = f"{self.url}/{path}/"                
             kvstore_spec = {
                 'driver': 'http',
                 'base_url': sub_url
@@ -154,35 +164,54 @@ class Volume:
             subvolume_idx, x, y, z = idx
 
             assert 0 <= subvolume_idx < len(self.data), "Invalid subvolume index."
-            if self.normalize:
-                return self.data[subvolume_idx][x, y, z].read().result()/self.max_dtype
-            
+            if self.domain == "dl.ash2txt":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, y, z].read().result()/self.max_dtype
+                else:
+                    return self.data[subvolume_idx][x,y,z].read().result()
+                
+            elif self.domain == "local":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, y, z]/self.max_dtype
+                else:
+                    return self.data[subvolume_idx][x,y,z]
             else:
-                return self.data[subvolume_idx][x,y,z].read().result()
+                raise ValueError("Invalid domain.")
             
         elif isinstance(idx, tuple) and len(idx) == 3:
             x, y, z = idx
 
             subvolume_idx = 0
 
-            if self.normalize:
-                return self.data[subvolume_idx][x, y, z].read().result()/self.max_dtype
-            
+            if self.domain == "dl.ash2txt":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, y, z].read().result()/self.max_dtype
+                
+                else:
+                    return self.data[subvolume_idx][x,y,z].read().result()
+                
+            elif self.domain == "local":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, y, z]/self.max_dtype
+                
+                else:
+                    return self.data[subvolume_idx][x,y,z]
             else:
-                return self.data[subvolume_idx][x,y,z].read().result()
-        
+                raise ValueError("Invalid domain.")
         else:
             raise IndexError("Invalid index. Must be a tuple of three elements (coordinates) or four elements (subvolume id and coordinates).")
     
     def activate_caching(self) -> None:
-        if not self.cache:
-            self.cache = True
-            self.data = self.load_data()
+        if self.domain != "local":
+            if not self.cache:
+                self.cache = True
+                self.data = self.load_data()
 
     def deactivate_caching(self) -> None:
-        if self.cache:
-            self.cache = False
-            self.data = self.load_data()
+        if self.domain != "local":
+            if self.cache:
+                self.cache = False
+                self.data = self.load_data()
 
     def shape(self, subvolume_idx: int = 0) -> Tuple[int, ...]:
         assert 0 <= subvolume_idx < len(self.data), "Invalid subvolume index"
