@@ -4,6 +4,8 @@ import site
 
 from .volume import Volume, Cube
 from .volume_2 import Volume2
+from .paths.utils import update_list
+
 __all__ = ["Volume", "Volume2", "Cube"]
 
 def check_agreement():
@@ -25,3 +27,9 @@ def check_agreement():
 
 # Check agreement on import
 check_agreement()
+
+# Update list of files on import
+try:
+    update_list("https://registeredusers:only@dl.ash2txt.org/other/dev/")
+except:
+    print("Could not update the remote file paths.")

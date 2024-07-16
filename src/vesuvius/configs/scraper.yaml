@@ -1,5 +1,0 @@
-base_url: "http://example.com/"
-ignore_list:
-  - "\.zarr$"
-  - "some_other_pattern"
-zarr_pattern: "\.zarr$"

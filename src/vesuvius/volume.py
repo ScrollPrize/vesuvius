@@ -29,7 +29,7 @@ class Volume:
             self.segment_id = None
 
         self.scroll_id = scroll_id
-        self.configs = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'{type}s.yaml')
+        self.configs = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'scrolls.yaml')
         self.energy = energy
         self.resolution = resolution
         self.url = self.get_url_from_yaml()
@@ -67,9 +67,9 @@ class Volume:
         
         # Retrieve the URL for the given id, energy, and resolution
         if self.type == 'scroll':
-            url: str = data.get(self.scroll_id, {}).get(self.energy, {}).get(self.resolution)
+            url: str = data.get(str(self.scroll_id), {}).get(str(self.energy), {}).get(str(self.resolution), {}).get("volume")
         elif self.type == 'segment':
-            url: str = data.get(self.scroll_id, {}).get(self.energy, {}).get(self.resolution, {}).get(self.segment_id)
+            url: str = data.get(str(self.scroll_id), {}).get(str(self.energy), {}).get(str(self.resolution), {}).get("segments", {}).get(str(self.segment_id))
 
         if url is None:
             if self.type == 'scroll':

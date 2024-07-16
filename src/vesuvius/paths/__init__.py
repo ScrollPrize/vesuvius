@@ -1,2 +1,2 @@
-from .utils import list_files
-__all__ = ["list_files"]
+from .utils import update_list, list_files
+__all__ = ["update_list", "list_files"]
