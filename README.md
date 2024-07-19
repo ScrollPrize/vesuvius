@@ -41,6 +41,24 @@ scroll.shape(subvolume_index)
 # To access dtype
 scroll.dtype
 ```
+### Importing Cube
+To import and use the `Cube` class:
+```python
+from vesuvius import Cube
+
+# Basic usage
+cube = Cube("scroll", 1, 54, 7.91, z=2256,y=2512,x=4816, cache=True, cache_dir='/home/giorgio/Projects/vesuvius/dev_jupyter/cache') # with caching
+
+cube = Cube("scroll", 1, 54, 7.91, z=2256,y=2512,x=4816) # without caching
+
+# as before normalize=True will provide a normalized volume (not masks)
+
+# Deactivate/activate caching (works only with remote repository)
+cube.activate_caching() # make sure that a proper cache_dir is defined
+cube.deactivate_caching()
+
+# To access the volume and the masks
+volume, mask = cube[:,:,:] # also works with slicing
 
 ### Listing Files
 To list available files in the remote repository:
