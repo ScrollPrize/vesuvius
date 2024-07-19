@@ -219,7 +219,7 @@ class Volume:
         assert 0 <= subvolume_idx < len(self.data), "Invalid subvolume index"
         return self.data[subvolume_idx].shape
     
-# TODO: Doesnt work yet
+#TODO: fix cubes path on website
 class Cube:
     def __init__(self, scroll_id: int, energy: int, resolution: float, z: int, y: int, x: int, cache: bool = False, cache_dir : Optional[os.PathLike] = None, normalize: bool = False) -> None:
         self.scroll_id = scroll_id

@@ -6,8 +6,9 @@ from .volume import Volume, Cube
 from .volume_2 import Volume2
 from .paths.utils import update_list
 from .paths.utils import list_files as list
+from .paths.utils import list_cubes as cubes
 
-__all__ = ["Volume", "Volume2", "Cube", "list"]
+__all__ = ["Volume", "Volume2", "Cube", "list", "cubes"]
 
 def check_agreement():
     install_path = site.getsitepackages()[-1]
@@ -31,6 +32,6 @@ check_agreement()
 
 # Update list of files on import
 try:
-    update_list("https://registeredusers:only@dl.ash2txt.org/other/dev/")
+    update_list("https://registeredusers:only@dl.ash2txt.org/other/dev/", "https://registeredusers:only@dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/seg-volumetric-labels/finished_cubes/")
 except:
     print("Could not update the remote file paths.")

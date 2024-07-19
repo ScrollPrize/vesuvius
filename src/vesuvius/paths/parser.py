@@ -38,6 +38,28 @@ async def get_directory_structure(url: str, session: aiohttp.ClientSession, igno
 
     return directory_tree
 
+async def list_subfolders(url: str, session: aiohttp.ClientSession, ignore_list: Optional[List[str]] = None) -> List[str]:
+    if ignore_list is None:
+        ignore_list = []
+
+    page_content = await fetch(session, url)
+    if not page_content:
+        return []
+
+    tree = html.fromstring(page_content)
+    subfolders = []
+
+    for element in tree.xpath('//a'):
+        href = element.get('href')
+        if href and href not in ['../', './'] and '?' not in href:
+            full_url = url + href
+            if any(re.search(pattern, href) for pattern in ignore_list):
+                continue
+            if href.endswith('/'):  # Normal directories
+                subfolders.append(full_url)
+
+    return subfolders
+
 async def find_zarr_files(tree: Dict[str, Optional[Dict]], url: str, session: aiohttp.ClientSession) -> Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]]:
     zarr_files: Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]] = {}
     volume_pattern = re.compile(r'volumes/(?P<intensity>\d+)keV_(?P<resolution>\d+\.\d{2})mum\.zarr/')
