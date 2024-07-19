@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, Tuple, Union, List
 import numpy as np
 import requests
 import zarr
+import nrrd
+import tempfile
 
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
@@ -219,7 +221,7 @@ class Volume:
     
 # TODO: Doesnt work yet
 class Cube:
-    def __init__(self, scroll_id: int, energy: int, resolution: float, z: int, y: int, x: int, cache: bool = False, normalize: bool = False) -> None:
+    def __init__(self, scroll_id: int, energy: int, resolution: float, z: int, y: int, x: int, cache: bool = False, cache_dir : Optional[os.PathLike] = None, normalize: bool = False) -> None:
         self.scroll_id = scroll_id
         self.configs = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'cubes.yaml')
         self.energy = energy
@@ -227,12 +229,15 @@ class Cube:
         self.z, self.y, self.x = z, y, x
         self.volume_url, self.mask_url = self.get_url_from_yaml()
         self.cache = cache
+        if self.cache:
+            self.cache_dir = cache_dir
+            os.makedirs(self.cache_dir, exist_ok=True)
         self.normalize = normalize
 
         self.volume, self.mask = self.load_data()
 
         if self.normalize:
-            self.max_dtype = get_max_value(self.volume.dtype.numpy_dtype)
+            self.max_dtype = get_max_value(self.volume.dtype)
         
     def get_url_from_yaml(self) -> str:
         # Load the YAML file
@@ -241,72 +246,77 @@ class Cube:
         
         # Retrieve the URL for the given id, energy, and resolution
         base_url: str = data.get(self.scroll_id, {}).get(self.energy, {}).get(self.resolution, {}).get(f"{self.z:05d}_{self.y:05d}_{self.x:05d}")
-        print(base_url)
         if base_url is None:
                 raise ValueError("URL not found.")
 
         volume_url = base_url + f"{self.z:05d}_{self.y:05d}_{self.x:05d}_volume.nrrd"
         mask_url = base_url + f"{self.z:05d}_{self.y:05d}_{self.x:05d}_mask.nrrd"
-        print(volume_url)
         return volume_url, mask_url
     
-    def load_data(self) -> Tuple[ts.TensorStore, ts.TensorStore]:
-        if self.cache:
-            context_spec = {
-                'cache_pool': {
-                    "total_bytes_limit": 10000000 #TODO: set this... or manage better local cache!
-                }
-            }
-        else:
-            context_spec = {}
+    def load_data(self) -> Tuple[NDArray, NDArray]:
+        output = []
+        for url in [self.volume_url, self.mask_url]:
+            if self.cache:
+                # Extract the relevant path after "finished_cubes"
+                path_after_finished_cubes = url.split('finished_cubes/')[1]
+                # Extract the directory structure and the filename
+                dir_structure, filename = os.path.split(path_after_finished_cubes)
 
-        kvstore_spec_volume = {
-            'driver': 'http',
-            'base_url': self.volume_url,
-        }
+                # Create the full directory path in the temp_dir
+                full_temp_dir_path = os.path.join(self.cache_dir, dir_structure)
 
-        kvstore_spec_mask = {
-            'driver': 'http',
-            'base_url': self.mask_url,
-        }
+                # Make sure the directory structure exists
+                os.makedirs(full_temp_dir_path, exist_ok=True)
 
-        spec_volume = {
-            'driver': 'nrrd',
-            'kvstore': kvstore_spec_volume,
-            'context': context_spec,
-        }
+                # Create the full path for the temporary file
+                temp_file_path = os.path.join(full_temp_dir_path, filename)
 
-        spec_mask = {
-            'driver': 'nrrd',
-            'kvstore': kvstore_spec_mask,
-            'context': context_spec,
-        }
+                # Check if the file already exists in the cache
+                if os.path.exists(temp_file_path):
+                    # Read the NRRD file from the cache
+                    array, _ = nrrd.read(temp_file_path)
 
-        return ts.open(spec_volume).result(), ts.open(spec_mask).result()
+                else:
+                    # Download the remote file
+                    response = requests.get(url)
+                    response.raise_for_status()  # Ensure we notice bad responses
+                    # Write the downloaded content to the temporary file with the same directory structure and filename
+                    with open(temp_file_path, 'wb') as tmp_file:
+                        tmp_file.write(response.content)
 
-    '''
-    def get_cache_dir(self) -> str:
-        cache_dir = os.path.join(os.path.expanduser("~"), "vesuvius-data", f"{self.type}s", f"{self.scroll_id}", f"{self.energy}_{self.resolution}")
-        if self.segment_id:
-            cache_dir = os.path.join(cache_dir, f"{self.segment_id}")
-        os.makedirs(cache_dir, exist_ok=True)
-        return cache_dir'''
-    
+                        array, _ = nrrd.read(temp_file_path)
+
+            else:
+                response = requests.get(url)
+                response.raise_for_status()  # Ensure we notice bad responses
+                with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+                    tmp_file.write(response.content)
+                    temp_file_path = tmp_file.name
+                    # Read the NRRD file from the temporary file
+
+                    array, _ = nrrd.read(temp_file_path)
+
+            output.append(array)
+
+        return output[0], output[1]
+
+
     def __getitem__(self, idx: Tuple[int, ...]) -> NDArray:
         if isinstance(idx, tuple) and len(idx) == 3:
             zz, yy, xx = idx
 
             if self.normalize:
-                return self.volume[zz, yy, xx].read().result()/self.max_dtype, self.mask[zz, yy, xx].read().result()
+                return self.volume[zz, yy, xx]/self.max_dtype, self.mask[zz, yy, xx]
             
             else:
-                return self.volume[zz, yy, xx].read().result(), self.mask[zz, yy, xx].read().result()
+                return self.volume[zz, yy, xx], self.mask[zz, yy, xx]
             
         else:
             raise IndexError("Invalid index. Must be a tuple of three elements.")
     
     def activate_caching(self) -> None:
         if not self.cache:
+            assert self.cache_dir is not None, "attribute cache_dir is None, define it first!"
             self.cache = True
             self.volume, self.mask = self.load_data()
 

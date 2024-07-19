@@ -32,7 +32,8 @@ setup(
         'zarr',
         'tqdm',
         'lxml',
-        'nest_asyncio'
+        'nest_asyncio',
+        'pynrrd'
     ],
     python_requires='>=3.8',
     include_package_data=True,
