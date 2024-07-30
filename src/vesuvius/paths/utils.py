@@ -1,11 +1,11 @@
 import asyncio
 import aiohttp
 import yaml
+from ..setup.accept_terms import get_installation_path
 from typing import List, Optional, Dict, Tuple
 from .parser import get_directory_structure, find_zarr_files, list_subfolders
 import nest_asyncio
 import ssl
-import site
 import os
 
 async def scrape_website(base_url: str, ignore_list: List[str]) -> Tuple[Dict[str, Optional[Dict]], Dict[str, str]]:
@@ -27,12 +27,13 @@ async def collect_subfolders(base_url: str, ignore_list: List[str]) -> List[str]
         return subfolders
     
 def update_list(base_url: str, base_url_cubes: str, ignore_list: Optional[List[str]] = None) -> None:
-    scroll_config = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'scrolls.yaml')
-    directory_config = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'directory_structure.yaml')
-    cubes_config = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'cubes.yaml')
+    install_path = get_installation_path()
+    scroll_config = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
+    directory_config = os.path.join(install_path, 'vesuvius', 'configs', f'directory_structure.yaml')
+    cubes_config = os.path.join(install_path, 'vesuvius', 'configs', f'cubes.yaml')
 
     if ignore_list is None:
-        ignore_list = [r'\.zarr$', r'some_other_pattern']
+        ignore_list = [r'\.zarr$']
     
     try:
         loop = asyncio.get_running_loop()
@@ -75,13 +76,15 @@ def update_list(base_url: str, base_url_cubes: str, ignore_list: Optional[List[s
     #print("Scrolls paths saved to 'scrolls.yaml'")
 
 def list_files() -> Dict:
-    scroll_config = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'scrolls.yaml')
+    install_path = get_installation_path()
+    scroll_config = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
     with open(scroll_config, 'r') as file:
         data = yaml.safe_load(file)
     return data
 
 def list_cubes() -> Dict:
-    cubes_config = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'cubes.yaml')
+    install_path = get_installation_path()
+    cubes_config = os.path.join(install_path, 'vesuvius', 'configs', f'cubes.yaml')
     with open(cubes_config, 'r') as file:
         data = yaml.safe_load(file)
     return data

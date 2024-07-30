@@ -11,7 +11,7 @@ class CustomInstallCommand(install):
 
         To complete the setup, please run the following command:
 
-            vesuvius.accept_terms
+            vesuvius.accept_terms --yes
 
         This will display the terms and conditions to be accepted.
         ============================================================
@@ -20,7 +20,7 @@ class CustomInstallCommand(install):
 
 setup(
     name='vesuvius',
-    version='0.1',
+    version='0.5',
     package_dir = {"": "src"},
     packages=find_packages(where="src"),
     install_requires=[

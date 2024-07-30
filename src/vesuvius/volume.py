@@ -1,6 +1,5 @@
 import os
 import yaml
-import site
 import tensorstore as ts
 from numpy.typing import NDArray
 from typing import Any, Dict, Optional, Tuple, Union, List
@@ -9,6 +8,7 @@ import requests
 import zarr
 import nrrd
 import tempfile
+from .setup.accept_terms import get_installation_path
 
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
@@ -36,8 +36,10 @@ class Volume:
         if domain == "local":
             assert path is not None
 
+        install_path = get_installation_path()
+    
         self.scroll_id = scroll_id
-        self.configs = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'scrolls.yaml')
+        self.configs = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
         self.energy = energy
         self.resolution = resolution
         self.domain = domain
@@ -66,14 +68,14 @@ class Volume:
             original_scale = original_dataset['coordinateTransformations'][0]['scale'][0]
             original_resolution = self.resolution * original_scale
             idx = 0
-            print(f"Data with original resolution: {original_resolution} mum, subvolume idx: {idx}, shape: {self.shape(idx)}")
+            print(f"Data with original resolution: {original_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
 
             # Loop through the datasets to print the scaled resolutions, excluding the first one
             for dataset in self.metadata['zattrs']['multiscales'][0]['datasets'][1:]:
                 idx += 1
                 scale_factors = dataset['coordinateTransformations'][0]['scale']
                 scaled_resolution = self.resolution * scale_factors[0]
-                print(f"Contains also data with scaled resolution: {scaled_resolution} mum, subvolume idx: {idx}, shape: {self.shape(idx)}")
+                print(f"Contains also data with scaled resolution: {scaled_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
 
         
     def get_url_from_yaml(self) -> str:
@@ -223,7 +225,8 @@ class Volume:
 class Cube:
     def __init__(self, scroll_id: int, energy: int, resolution: float, z: int, y: int, x: int, cache: bool = False, cache_dir : Optional[os.PathLike] = None, normalize: bool = False) -> None:
         self.scroll_id = scroll_id
-        self.configs = os.path.join(site.getsitepackages()[-1], 'vesuvius', 'configs', f'cubes.yaml')
+        install_path = get_installation_path()
+        self.configs = os.path.join(install_path, 'vesuvius', 'configs', f'cubes.yaml')
         self.energy = energy
         self.resolution = resolution
         self.z, self.y, self.x = z, y, x
@@ -249,8 +252,11 @@ class Cube:
         if base_url is None:
                 raise ValueError("URL not found.")
 
-        volume_url = base_url + f"{self.z:05d}_{self.y:05d}_{self.x:05d}_volume.nrrd"
-        mask_url = base_url + f"{self.z:05d}_{self.y:05d}_{self.x:05d}_mask.nrrd"
+        volume_filename = f"{self.z:05d}_{self.y:05d}_{self.x:05d}_volume.nrrd"
+        mask_filename = f"{self.z:05d}_{self.y:05d}_{self.x:05d}_mask.nrrd"
+
+        volume_url = os.path.join(base_url, volume_filename)
+        mask_url = os.path.join(base_url, mask_filename)
         return volume_url, mask_url
     
     def load_data(self) -> Tuple[NDArray, NDArray]:

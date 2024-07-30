@@ -62,8 +62,8 @@ async def list_subfolders(url: str, session: aiohttp.ClientSession, ignore_list:
 
 async def find_zarr_files(tree: Dict[str, Optional[Dict]], url: str, session: aiohttp.ClientSession) -> Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]]:
     zarr_files: Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]] = {}
-    volume_pattern = re.compile(r'volumes/(?P<intensity>\d+)keV_(?P<resolution>\d+\.\d{2})mum\.zarr/')
-    segment_pattern = re.compile(r'segments/(?P<intensity>\d+)keV_(?P<resolution>\d+\.\d{2})mum/(?P<segment_id>[^/]+)\.zarr/')
+    volume_pattern = re.compile(r'volumes/(?P<intensity>\d+)keV_(?P<resolution>\d+\.\d{2})um\.zarr/')
+    segment_pattern = re.compile(r'segments/(?P<intensity>\d+)keV_(?P<resolution>\d+\.\d{2})um/(?P<segment_id>[^/]+)\.zarr/')
 
     for key, value in tree.items():
         if isinstance(value, dict):
