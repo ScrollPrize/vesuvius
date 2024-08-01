@@ -5,10 +5,10 @@ import site
 from .volume import Volume, Cube
 from .setup.accept_terms import is_colab
 from .paths.utils import update_list
-from .paths.utils import list_files as list
+from .paths.utils import list_files
 from .paths.utils import list_cubes as cubes
 
-__all__ = ["Volume", "Cube", "list", "cubes"]
+__all__ = ["Volume", "Cube", "list_files", "cubes"]
 
 def check_agreement():
     if is_colab():

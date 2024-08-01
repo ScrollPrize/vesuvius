@@ -9,6 +9,7 @@ import zarr
 import nrrd
 import tempfile
 from .setup.accept_terms import get_installation_path
+from .paths.utils import list_files
 
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
@@ -21,63 +22,109 @@ def get_max_value(dtype: np.dtype) -> Union[float, int]:
     return max_value
     
 class Volume:
-    def __init__(self, type: str, scroll_id: int, energy: int, resolution: float, segment_id: Optional[int] = None, cache: bool = False, normalize: bool = False, verbose : bool = True, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
-        assert type in ["scroll", "segment"], "type should be either 'scroll' or 'segment'"
-        self.type = type
+    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = False, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = True, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
+        try:
+            type = str(type)
+            if type[0].isdigit():
+                scroll_id, energy, resolution, _ = self.find_segment_details(str(type))
+                segment_id = int(type)
+                type = "segment"
+                
+            if type.startswith("scroll") and (len(type) > 6) and (type[6:].isdigit()):
+                self.type = "scroll"
+                self.scroll_id = int(type[6:])
+            
+            else:
+                assert type in ["scroll", "segment"], "type should be either 'scroll', 'scroll#' or 'segment'"
+                self.type = type
 
-        if type == "segment":
-            assert isinstance(segment_id, int), "segment_id must be an int when type is 'segment'"
-            self.segment_id = segment_id
-        else:
-            self.segment_id = None
+                if type == "segment":
+                    assert isinstance(segment_id, int), "segment_id must be an int when type is 'segment'"
+                    self.segment_id = segment_id
+                else:
+                    self.segment_id = None
+                self.scroll_id = scroll_id
 
-        assert domain in ["dl.ash2txt", "local"], "domain should be dl.ash2txt or local"
+            assert domain in ["dl.ash2txt", "local"], "domain should be dl.ash2txt or local"
 
-        if domain == "local":
-            assert path is not None
+            if domain == "local":
+                assert path is not None
 
-        install_path = get_installation_path()
-    
-        self.scroll_id = scroll_id
-        self.configs = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
-        self.energy = energy
-        self.resolution = resolution
-        self.domain = domain
-        self.cache = cache
-        self.normalize = normalize
-        self.verbose = verbose
-
-        if self.domain == "dl.ash2txt":
-            self.url = self.get_url_from_yaml()
-            self.metadata = self.load_ome_metadata()
-            self.data = self.load_data()
-            if self.normalize:
-                self.max_dtype = get_max_value(self.data[0].dtype.numpy_dtype)
-            self.dtype = self.data[0].dtype.numpy_dtype
-        elif self.domain == "local":
-            self.url = path
-            self.data = zarr.open(self.url, mode="r")
-            self.metadata = self.load_ome_metadata()
-            if self.normalize:
-                self.max_dtype = get_max_value(self.data[0].dtype)
-            self.dtype = self.data[0].dtype
-
-        if self.verbose:
-            # Assuming the first dataset is the original resolution
-            original_dataset = self.metadata['zattrs']['multiscales'][0]['datasets'][0]
-            original_scale = original_dataset['coordinateTransformations'][0]['scale'][0]
-            original_resolution = self.resolution * original_scale
-            idx = 0
-            print(f"Data with original resolution: {original_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
-
-            # Loop through the datasets to print the scaled resolutions, excluding the first one
-            for dataset in self.metadata['zattrs']['multiscales'][0]['datasets'][1:]:
-                idx += 1
-                scale_factors = dataset['coordinateTransformations'][0]['scale']
-                scaled_resolution = self.resolution * scale_factors[0]
-                print(f"Contains also data with scaled resolution: {scaled_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
-
+            install_path = get_installation_path()
         
+            self.configs = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
+
+            if energy:
+                self.energy = energy
+            else:
+                self.energy = self.grab_canonical_energy()
+
+            if resolution:
+                self.resolution = resolution
+            else:
+                self.resolution = self.grab_canonical_resolution()
+
+            self.domain = domain
+            self.cache = cache
+            self.cache_pool = cache_pool
+            self.normalize = normalize
+            self.verbose = verbose
+
+            if self.domain == "dl.ash2txt":
+                self.url = self.get_url_from_yaml()
+                self.metadata = self.load_ome_metadata()
+                self.data = self.load_data()
+                if self.normalize:
+                    self.max_dtype = get_max_value(self.data[0].dtype.numpy_dtype)
+                self.dtype = self.data[0].dtype.numpy_dtype
+            elif self.domain == "local":
+                self.url = path
+                self.data = zarr.open(self.url, mode="r")
+                self.metadata = self.load_ome_metadata()
+                if self.normalize:
+                    self.max_dtype = get_max_value(self.data[0].dtype)
+                self.dtype = self.data[0].dtype
+
+            if self.verbose:
+                # Assuming the first dataset is the original resolution
+                original_dataset = self.metadata['zattrs']['multiscales'][0]['datasets'][0]
+                original_scale = original_dataset['coordinateTransformations'][0]['scale'][0]
+                original_resolution = float(self.resolution) * float(original_scale)
+                idx = 0
+                print(f"Data with original resolution: {original_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
+
+                # Loop through the datasets to print the scaled resolutions, excluding the first one
+                for dataset in self.metadata['zattrs']['multiscales'][0]['datasets'][1:]:
+                    idx += 1
+                    scale_factors = dataset['coordinateTransformations'][0]['scale']
+                    scaled_resolution = float(self.resolution) * float(scale_factors[0])
+                    print(f"Contains also data with scaled resolution: {scaled_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
+        except Exception as e:
+            print(f"An error occurred while initializing the Volume class: {e}", end="\n")
+            print('Load the canonical scroll 1 with Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91)', end="\n")
+            print('Load a segment (e.g. 20230827161847) with Volume(type="segment", scroll_id=1, energy=54, resolution=7.91, segment_id=20230827161847)')
+            raise
+
+    def find_segment_details(self, segment_id: str):
+        dictionary = list_files()
+        stack = [(list(dictionary.items()), [])]
+
+        while stack:
+            items, path = stack.pop()
+            
+            for key, value in items:
+                if isinstance(value, dict):
+                    # Check if 'segments' key is present in the current level of the dictionary
+                    if 'segments' in value:
+                        # Check if the segment_id is in the segments dictionary
+                        if segment_id in value['segments']:
+                            scroll_id, energy, resolution = path[0], path[1], key
+                            return scroll_id, energy, resolution, value['segments'][segment_id]
+                    # Add nested dictionary to the stack for further traversal
+                    stack.append((list(value.items()), path + [key]))
+
+        return None, None, None, None
+
     def get_url_from_yaml(self) -> str:
         # Load the YAML file
         with open(self.configs, 'r') as file:
@@ -121,7 +168,7 @@ class Volume:
         if self.cache:
             context_spec = {
                 'cache_pool': {
-                    "total_bytes_limit": 10000000 #TODO: set this... or manage better local cache!
+                    "total_bytes_limit": self.cache_pool
                 }
             }
         else:
@@ -205,6 +252,26 @@ class Volume:
         else:
             raise IndexError("Invalid index. Must be a tuple of three elements (coordinates) or four elements (subvolume id and coordinates).")
     
+    def grab_canonical_energy(self) -> int:
+        if self.scroll_id == 1:
+            return 54
+        elif self.scroll_id == 2:
+            return 54
+        elif self.scroll_id == 3:
+            return 53
+        elif self.scroll_id == 4:
+            return 70
+        
+    def grab_canonical_resolution(self) -> float:
+        if self.scroll_id == 1:
+            return 7.91
+        elif self.scroll_id == 2:
+            return 7.91
+        elif self.scroll_id == 3:
+            return 3.24
+        elif self.scroll_id == 4:
+            return 3.24
+        
     def activate_caching(self) -> None:
         if self.domain != "local":
             if not self.cache:
@@ -220,8 +287,8 @@ class Volume:
     def shape(self, subvolume_idx: int = 0) -> Tuple[int, ...]:
         assert 0 <= subvolume_idx < len(self.data), "Invalid subvolume index"
         return self.data[subvolume_idx].shape
-    
-#TODO: fix cubes path on website
+
+  
 class Cube:
     def __init__(self, scroll_id: int, energy: int, resolution: float, z: int, y: int, x: int, cache: bool = False, cache_dir : Optional[os.PathLike] = None, normalize: bool = False) -> None:
         self.scroll_id = scroll_id
@@ -295,7 +362,7 @@ class Cube:
             else:
                 response = requests.get(url)
                 response.raise_for_status()  # Ensure we notice bad responses
-                with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+                with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
                     tmp_file.write(response.content)
                     temp_file_path = tmp_file.name
                     # Read the NRRD file from the temporary file
