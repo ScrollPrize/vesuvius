@@ -330,8 +330,8 @@ class Cube:
         output = []
         for url in [self.volume_url, self.mask_url]:
             if self.cache:
-                # Extract the relevant path after "finished_cubes"
-                path_after_finished_cubes = url.split('finished_cubes/')[1]
+                # Extract the relevant path after "instance-annotated-cubes"
+                path_after_finished_cubes = url.split('instance-annotated-cubes/')[1]
                 # Extract the directory structure and the filename
                 dir_structure, filename = os.path.split(path_after_finished_cubes)
 
