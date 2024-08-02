@@ -33,8 +33,6 @@ After this the library can be imported as usual:
 import vesuvius
 ```
 
-Got it! Here's the revised explanation and code for listing available files, including the different `segment_ids` under `segments`.
-
 ### Listing
 
 #### Listing files
