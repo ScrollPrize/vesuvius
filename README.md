@@ -200,10 +200,6 @@ Volume(
 - **path**: Path to the local data.
 
 #### Methods
-- **find_segment_details(segment_id: str)**: Finds segment details.
-- **get_url_from_yaml()**: Retrieves the URL from the YAML configuration.
-- **load_ome_metadata()**: Loads OME metadata.
-- **load_data()**: Loads data.
 - **activate_caching()**: Activates caching.
 - **deactivate_caching()**: Deactivates caching.
 - **shape(subvolume_idx: int = 0)**: Returns the shape of the specified subvolume.
@@ -256,7 +252,6 @@ Cube(
 - **normalize**: Normalize the data.
 
 #### Methods
-- **get_url_from_yaml()**: Retrieves the URL from the YAML configuration.
 - **load_data()**: Loads data.
 - **activate_caching()**: Activates caching.
 - **deactivate_caching()**: Deactivates caching.
@@ -270,4 +265,4 @@ Cube(
 ## Introductory notebooks
 For an example of how to use the `Volume` class, please play with this [Colab notebook](https://gist.github.com/giorgioangel/40ec66262b42b96c3176dd43f55d23f1#file-scroll-data-access-ipynb).
 
-This [other Colab notebook](link to cube notebook) shows how to access to the instance annotated cubes.
+This [other Colab notebook](https://colab.research.google.com/gist/giorgioangel/3862d226ff87dacd368608f7ad3d55b9/cubes-bootstrap.ipynb) shows how to access to the instance annotated cubes.
