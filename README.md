@@ -1,8 +1,22 @@
-# Vesuvius
-A Python library for accessing Vesuvius Challenge data.
+# vesuvius
+From [Vesuvius Challenge](https://scrollprize.org), a Python library for accessing CT scans of ancient scrolls.
 
-## Overview
-The Vesuvius library provides tools for accessing, managing, and manipulating high-resolution volumetric and segmented data related to the Vesuvius Challenge. It supports both remote data retrieval and local file handling, with options for data caching and normalization.
+`vesuvius` allows direct access to scroll data **without** managing download scripts or storing terabytes of CT scans locally:
+
+```python
+import vesuvius
+
+scroll1 = vesuvius.Volume("Scroll1")
+img = scroll[3,1000,:,:]
+
+plt.imshow(img)
+```
+
+<img src="img/slice.png" alt="drawing" width="200"/>
+
+Data is streamed in the background, only serving the requested portions.
+
+The library provides tools for accessing, managing, and manipulating high-resolution volumetric and segmented data related to the Vesuvius Challenge. It supports both remote data retrieval and local file handling, with options for data caching and normalization.
 
 ### What It Does
 - **Data Retrieval**: Fetches volumetric scroll data, surface volume of segmented areas and annotated volumetric cubes from remote repositories or local files.
@@ -17,18 +31,17 @@ The Vesuvius library provides tools for accessing, managing, and manipulating hi
 - **Unsupported Data Types**: Only supports specific data types (volumetric and segmented data in specific formats like Zarr and NRRD). Other data formats are not supported.
 
 ## Installation
-To install the Vesuvius library, run:
 ```sh
-pip install vesuvius -v
+$ pip install vesuvius
 ```
 
 ## Usage
-Before using the library for the first time, ensure you accept the terms:
+Before using the library for the first time, accept the license terms:
 ```sh
-vesuvius.accept_terms --yes
+$ vesuvius.accept_terms --yes
 ```
 
-After this the library can be imported as usual:
+After this the library can be imported in Python:
 ```python
 import vesuvius
 ```

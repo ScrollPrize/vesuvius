@@ -2,3 +2,4 @@
 /src/vesuvius.egg-info/
 /dev_jupyter/
 /tests/
+.venv/

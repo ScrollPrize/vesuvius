@@ -33,7 +33,8 @@ setup(
         'tqdm',
         'lxml',
         'nest_asyncio',
-        'pynrrd'
+        'pynrrd',
+        'pyyaml',
     ],
     python_requires='>=3.8',
     include_package_data=True,

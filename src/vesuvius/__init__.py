@@ -24,7 +24,7 @@ def check_agreement():
     # Check if the current script is not the setup script
     if not os.path.exists(agreement_file_path):
         if "accept_terms" not in current_script:
-            raise ImportError("You must accept the terms and conditions before using this package. Run `vesuvius.accept_terms`.")
+            raise ImportError("You must accept the terms and conditions before using this package. Run `$ vesuvius.accept_terms --yes` from the command line.")
     else:   
         with open(agreement_file_path, 'r') as file:
             content = file.read().strip()
