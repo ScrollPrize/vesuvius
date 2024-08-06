@@ -7,7 +7,7 @@ From [Vesuvius Challenge](https://scrollprize.org), a Python library for accessi
 import vesuvius
 
 scroll1 = vesuvius.Volume("Scroll1")
-img = scroll[3,1000,:,:]
+img = scroll[1000,:,:,3]
 
 plt.imshow(img)
 ```
