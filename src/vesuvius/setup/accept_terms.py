@@ -46,7 +46,7 @@ def display_terms_and_conditions(accept_terms):
     print(terms)
     
     if not accept_terms:
-        print("You must accept the terms and conditions to use this package.")
+        print("You must accept the terms and conditions to use this package. Run `$ vesuvius.accept_terms --yes` to accept.")
         sys.exit(1)
     else:
         save_agreement()
