@@ -22,9 +22,9 @@ def get_max_value(dtype: np.dtype) -> Union[float, int]:
     return max_value
     
 class Volume:
-    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = False, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = True, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
+    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = False, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
         try:
-            type = str(type)
+            type = str(type).lower()
             if type[0].isdigit():
                 scroll_id, energy, resolution, _ = self.find_segment_details(str(type))
                 segment_id = int(type)
@@ -84,26 +84,30 @@ class Volume:
                 if self.normalize:
                     self.max_dtype = get_max_value(self.data[0].dtype)
                 self.dtype = self.data[0].dtype
-
+            
             if self.verbose:
-                # Assuming the first dataset is the original resolution
-                original_dataset = self.metadata['zattrs']['multiscales'][0]['datasets'][0]
-                original_scale = original_dataset['coordinateTransformations'][0]['scale'][0]
-                original_resolution = float(self.resolution) * float(original_scale)
-                idx = 0
-                print(f"Data with original resolution: {original_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
-
-                # Loop through the datasets to print the scaled resolutions, excluding the first one
-                for dataset in self.metadata['zattrs']['multiscales'][0]['datasets'][1:]:
-                    idx += 1
-                    scale_factors = dataset['coordinateTransformations'][0]['scale']
-                    scaled_resolution = float(self.resolution) * float(scale_factors[0])
-                    print(f"Contains also data with scaled resolution: {scaled_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
+                self.meta()
+        
         except Exception as e:
             print(f"An error occurred while initializing the Volume class: {e}", end="\n")
             print('Load the canonical scroll 1 with Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91)', end="\n")
             print('Load a segment (e.g. 20230827161847) with Volume(type="segment", scroll_id=1, energy=54, resolution=7.91, segment_id=20230827161847)')
             raise
+    
+    def meta(self):
+        # Assuming the first dataset is the original resolution
+        original_dataset = self.metadata['zattrs']['multiscales'][0]['datasets'][0]
+        original_scale = original_dataset['coordinateTransformations'][0]['scale'][0]
+        original_resolution = float(self.resolution) * float(original_scale)
+        idx = 0
+        print(f"Data with original resolution: {original_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
+
+        # Loop through the datasets to print the scaled resolutions, excluding the first one
+        for dataset in self.metadata['zattrs']['multiscales'][0]['datasets'][1:]:
+            idx += 1
+            scale_factors = dataset['coordinateTransformations'][0]['scale']
+            scaled_resolution = float(self.resolution) * float(scale_factors[0])
+            print(f"Contains also data with scaled resolution: {scaled_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
 
     def find_segment_details(self, segment_id: str):
         dictionary = list_files()
@@ -209,10 +213,10 @@ class Volume:
         os.makedirs(cache_dir, exist_ok=True)
         return cache_dir'''
     
-    def __getitem__(self, idx: Tuple[int, ...]) -> NDArray:
+    def __getitem__(self, idx: Union[Tuple[int, ...],int]) -> NDArray:
 
         if isinstance(idx, tuple) and len(idx) == 4:
-            subvolume_idx, x, y, z = idx
+            x, y, z, subvolume_idx  = idx
 
             assert 0 <= subvolume_idx < len(self.data), "Invalid subvolume index."
             if self.domain == "dl.ash2txt":
@@ -249,9 +253,51 @@ class Volume:
                     return self.data[subvolume_idx][x,y,z]
             else:
                 raise ValueError("Invalid domain.")
+            
+        elif isinstance(idx, tuple) and len(idx) == 2:
+            x, y = idx
+
+            subvolume_idx = 0
+
+            if self.domain == "dl.ash2txt":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, y, :].read().result()/self.max_dtype
+                
+                else:
+                    return self.data[subvolume_idx][x,y,:].read().result()
+                
+            elif self.domain == "local":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, y, :]/self.max_dtype
+                
+                else:
+                    return self.data[subvolume_idx][x,y,:]
+                
+        elif (isinstance(idx, tuple) and len(idx) == 1) or isinstance(idx, int):
+            x = idx
+
+            subvolume_idx = 0
+
+            if self.domain == "dl.ash2txt":
+                if self.normalize:
+                    return self.data[subvolume_idx][x, :, :].read().result()/self.max_dtype
+                
+                else:
+                    return self.data[subvolume_idx][x,:,:].read().result()
+                
+            elif self.domain == "local":
+                if self.normalize:
+                    return self.data[subvolume_idx][x,:, :]/self.max_dtype
+                
+                else:
+                    return self.data[subvolume_idx][x,:,:]
+                
+            else:
+                raise ValueError("Invalid domain.")
+            
         else:
             raise IndexError("Invalid index. Must be a tuple of three elements (coordinates) or four elements (subvolume id and coordinates).")
-    
+        
     def grab_canonical_energy(self) -> int:
         if self.scroll_id == 1:
             return 54

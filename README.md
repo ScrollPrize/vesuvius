@@ -130,7 +130,7 @@ The `Volume` class is used for accessing volumetric data, both for scrolls and s
 ```python
 from vesuvius import Volume
 # Basic usage
-scroll = Volume(type="scroll1") # this is going to access directly the canonical scroll 1 volume
+scroll = Volume(type="Scroll1") # this is going to access directly the canonical scroll 1 volume
 
 # Basic usage specifying scan metadata
 scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91) # if you want to access a non canonical volume, you have to specify the scan metadata
@@ -139,7 +139,7 @@ scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91) # if you
 scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91, cache=True)
 
 # Deactivate/activate caching (works only with remote repository)
-scroll.activate_caching()
+scroll.activate_caching() # Don't need to do this if loaded the volume with cache=True
 scroll.deactivate_caching()
 
 # With normalization
@@ -147,6 +147,12 @@ scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91, normaliz
 
 # With local files
 scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91, domain="local", path="/path/to/54keV_7.91um.zarr")
+
+# Visualize which subvolumes are available
+scroll.meta()
+
+# To print meta at initialization, use the argument verbose=True
+scroll = Volume(type="Scroll1", verbose=True)
 
 # To access shapes of multiresolution arrays
 subvolume_index = 3  # third subvolume
@@ -156,7 +162,16 @@ shape = scroll.shape(subvolume_index)
 dtype = scroll.dtype
 
 # Access data using indexing
-data = scroll[0, :, :, :]  # Access the entire first subvolume
+data = scroll[:, :, :, subvolume_index]  # Access the entire third subvolume
+
+# When only three or less indices are specified, you are automatically accessing to the main subvolume (subvolume_index = 0)
+
+data = scroll[15] # equal to scroll[15,:,:,0]
+data = scroll[15,12] # equal to scroll [15,12,:,0]
+
+# Slicing is also permitted for the first three indices
+data = scroll[20:300,12:18,20:40,2]
+
 ```
 
 You can access segments in a similar fashion:
@@ -191,7 +206,7 @@ Volume(
 - **resolution**: Resolution level.
 - **segment_id**: Identifier for the segment.
 - **cache**: Enable caching.
-- **cache_pool**: Cache pool size.
+- **cache_pool**: Cache pool size in bytes.
 - **normalize**: Normalize the data.
 - **verbose**: Enable verbose output.
 - **domain**: Domain, either 'dl.ash2txt' or 'local'.
@@ -261,6 +276,6 @@ Cube(
 - **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
 
 ## Introductory notebooks
-For an example of how to use the `Volume` class, please play with this [Colab notebook](https://gist.github.com/giorgioangel/40ec66262b42b96c3176dd43f55d23f1#file-scroll-data-access-ipynb).
+For an example of how to use the `Volume` class, please play with this [Colab notebook](notebooks/example1_data_access.ipynb).
 
-This [other Colab notebook](https://colab.research.google.com/gist/giorgioangel/3862d226ff87dacd368608f7ad3d55b9/cubes-bootstrap.ipynb) shows how to access to the instance annotated cubes.
+This [other Colab notebook](notebooks/example2_cubes_bootstrap.ipynb) shows how to access to the instance annotated cubes.
