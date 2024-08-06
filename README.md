@@ -289,6 +289,6 @@ Cube(
 - **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
 
 ## Introductory notebooks
-For an example of how to use the `Volume` class, please play with this [Colab notebook](notebooks/example1_data_access.ipynb).
+For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb).
 
-This [other Colab notebook](notebooks/example2_cubes_bootstrap.ipynb) shows how to access to the instance annotated cubes.
+This [other jupyter notebook](notebooks/example2_cubes_bootstrap.ipynb) shows how to access to the instance annotated cubes.
