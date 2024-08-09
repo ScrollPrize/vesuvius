@@ -245,7 +245,7 @@ cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816, cac
 
 # if caching=True but cache_dir is not selected, the instances will be automatically saved in $HOME / vesuvius / annotated-instances
 
-cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816)  # without caching
+cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816, cache=False)  # without caching
 
 # With normalization
 cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816, normalize=True)
