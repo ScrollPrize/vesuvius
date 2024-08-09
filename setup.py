@@ -20,7 +20,7 @@ class CustomInstallCommand(install):
 
 setup(
     name='vesuvius',
-    version='0.1.2',
+    version='0.1.3',
     package_dir = {"": "src"},
     packages=find_packages(where="src"),
     install_requires=[
@@ -35,6 +35,7 @@ setup(
         'nest_asyncio',
         'pynrrd',
         'pyyaml',
+        'Pillow'
     ],
     python_requires='>=3.8',
     include_package_data=True,
