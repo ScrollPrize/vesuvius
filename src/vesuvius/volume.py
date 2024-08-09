@@ -8,11 +8,33 @@ import requests
 import zarr
 import nrrd
 import tempfile
+from PIL import Image
+from io import BytesIO
+from pathlib import Path
 from .setup.accept_terms import get_installation_path
 from .paths.utils import list_files
 
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
+    """
+    Get the maximum value for a given NumPy dtype.
+
+    Parameters:
+    ----------
+    dtype : np.dtype
+        The NumPy data type to evaluate.
+
+    Returns:
+    -------
+    Union[float, int]
+        The maximum value that the dtype can hold.
+
+    Raises:
+    ------
+    ValueError
+        If the dtype is not a floating point or integer.
+    """
+
     if np.issubdtype(dtype, np.floating):
         max_value = np.finfo(dtype).max
     elif np.issubdtype(dtype, np.integer):
@@ -22,7 +44,82 @@ def get_max_value(dtype: np.dtype) -> Union[float, int]:
     return max_value
     
 class Volume:
-    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = False, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
+    """
+    A class to represent a 3D volume in a scroll or segment.
+
+    Attributes
+    ----------
+    type : Union[str, int]
+        The type of volume, either a scroll or a segment.
+    scroll_id : Optional[int]
+        ID of the scroll.
+    energy : Optional[int]
+        Energy value associated with the volume.
+    resolution : Optional[float]
+        Resolution of the volume.
+    segment_id : Optional[int]
+        ID of the segment.
+    cache : bool
+        Indicates if caching is enabled.
+    cache_pool : int
+        Size of the cache pool.
+    normalize : bool
+        Indicates if the data should be normalized.
+    verbose : bool
+        If True, prints additional information during initialization.
+    domain : str
+        The domain from where data is fetched: 'dl.ash2txt' or 'local'.
+    path : Optional[str]
+        Path to the local data if domain is 'local'.
+    configs : str
+        Path to the configuration file.
+    url : str
+        URL to access the volume data.
+    metadata : Dict[str, Any]
+        Metadata related to the volume.
+    data : List[ts.TensorStore]
+        Loaded volume data.
+    inklabel : np.ndarray
+        Ink label data (only for segments).
+    dtype : np.dtype
+        Data type of the volume.
+    """
+        
+    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = True, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
+        """
+        Initialize the Volume object.
+
+        Parameters
+        ----------
+        type : Union[str, int]
+            The type of volume, either a scroll or a segment. One can also feed directly the canonical scroll, e.g. "Scroll1" or the segment timestamp.
+        scroll_id : Optional[int], default = None
+            ID of the scroll.
+        energy : Optional[int], default = None
+            Energy value associated with the volume.
+        resolution : Optional[float], default = None
+            Resolution of the volume.
+        segment_id : Optional[int], default = None
+            ID of the segment.
+        cache : bool, default = True
+            Indicates if caching is enabled.
+        cache_pool : int, default = 1e10
+            Size of the cache pool in bytes.
+        normalize : bool, default = False
+            Indicates if the data should be normalized.
+        verbose : bool, default = False
+            If True, prints additional information during initialization.
+        domain : str, default = "dl.ash2txt"
+            The domain from where data is fetched: 'dl.ash2txt' or 'local'.
+        path : Optional[str], default = None
+            Path to the local data if domain is 'local'.
+
+        Raises
+        ------
+        ValueError
+            If the provided `type` or `domain` is invalid.
+        """
+
         try:
             type = str(type).lower()
             if type[0].isdigit():
@@ -84,7 +181,11 @@ class Volume:
                 if self.normalize:
                     self.max_dtype = get_max_value(self.data[0].dtype)
                 self.dtype = self.data[0].dtype
-            
+        
+            if self.type == "segment":
+                self.inklabel = np.zeros(self.shape(0), dtype=np.uint8)
+                self.download_inklabel()
+
             if self.verbose:
                 self.meta()
         
@@ -94,7 +195,13 @@ class Volume:
             print('Load a segment (e.g. 20230827161847) with Volume(type="segment", scroll_id=1, energy=54, resolution=7.91, segment_id=20230827161847)')
             raise
     
-    def meta(self):
+    def meta(self) -> None:
+        """
+        Print metadata information about the volume.
+
+        This method provides information about the resolution and shape of the data at the original and scaled resolutions.
+        """
+
         # Assuming the first dataset is the original resolution
         original_dataset = self.metadata['zattrs']['multiscales'][0]['datasets'][0]
         original_scale = original_dataset['coordinateTransformations'][0]['scale'][0]
@@ -109,7 +216,26 @@ class Volume:
             scaled_resolution = float(self.resolution) * float(scale_factors[0])
             print(f"Contains also data with scaled resolution: {scaled_resolution} um, subvolume idx: {idx}, shape: {self.shape(idx)}")
 
-    def find_segment_details(self, segment_id: str):
+    def find_segment_details(self, segment_id: str) -> Tuple[Optional[int], Optional[int], Optional[float], Optional[Dict[str, Any]]]:
+        """
+        Find the details of a segment given its ID.
+
+        Parameters
+        ----------
+        segment_id : str
+            The ID of the segment to search for.
+
+        Returns
+        -------
+        Tuple[Optional[int], Optional[int], Optional[float], Optional[Dict[str, Any]]]
+            A tuple containing scroll_id, energy, resolution, and segment metadata.
+
+        Raises
+        ------
+        ValueError
+            If the segment details cannot be found.
+        """
+                
         dictionary = list_files()
         stack = [(list(dictionary.items()), [])]
 
@@ -130,6 +256,20 @@ class Volume:
         return None, None, None, None
 
     def get_url_from_yaml(self) -> str:
+        """
+        Retrieve the URL for the volume data from the YAML configuration file.
+
+        Returns
+        -------
+        str
+            The URL for the volume data.
+
+        Raises
+        ------
+        ValueError
+            If the URL cannot be found in the configuration.
+        """
+
         # Load the YAML file
         with open(self.configs, 'r') as file:
             data: Dict[str, Any] = yaml.safe_load(file)
@@ -150,7 +290,20 @@ class Volume:
             
         return url
     
-    def load_ome_metadata(self) -> None:
+    def load_ome_metadata(self) -> Dict[str, Any]:
+        """
+        Load the OME (Open Microscopy Environment) metadata for the volume.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The loaded metadata.
+
+        Raises
+        ------
+        requests.RequestException
+            If there is an error loading the metadata from the server.
+        """
         try:
             if self.domain == "dl.ash2txt":
                 # Load the .zattrs metadata
@@ -169,6 +322,19 @@ class Volume:
             raise
 
     def load_data(self) -> List[ts.TensorStore]:
+        """
+        Load the data for the volume.
+
+        Returns
+        -------
+        List[ts.TensorStore]
+            A list of TensorStore objects representing the sub-volumes.
+
+        Raises
+        ------
+        Exception
+            If there is an error loading the data from the server.
+        """
         if self.cache:
             context_spec = {
                 'cache_pool': {
@@ -204,17 +370,52 @@ class Volume:
                 raise
 
         return sub_volumes
-
-    '''
-    def get_cache_dir(self) -> str:
-        cache_dir = os.path.join(os.path.expanduser("~"), "vesuvius-data", f"{self.type}s", f"{self.scroll_id}", f"{self.energy}_{self.resolution}")
-        if self.segment_id:
-            cache_dir = os.path.join(cache_dir, f"{self.segment_id}")
-        os.makedirs(cache_dir, exist_ok=True)
-        return cache_dir'''
     
-    def __getitem__(self, idx: Union[Tuple[int, ...],int]) -> NDArray:
+    def download_inklabel(self) -> None:
+        """
+        Download the ink label image for a segment.
 
+        This method downloads and sets the `inklabel` attribute for the segment.
+
+        Raises
+        ------
+        AssertionError
+            If the volume type is not 'segment'.
+        """
+        assert self.type == "segment", "Can download ink label only for segments."
+        inklabel_url = f"{self.url[:-6]}_inklabels.png"
+        # Make a GET request to the URL to download the image
+        response = requests.get(inklabel_url)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Open the image directly from the response content using PIL
+            self.inklabel = np.array(Image.open(BytesIO(response.content)))
+        else:
+            print(f"Failed to download inklabel. Status code: {response.status_code}")
+        
+
+    def __getitem__(self, idx: Union[Tuple[int, ...],int]) -> NDArray:
+        """
+        Get a sub-volume or slice of the data.
+
+        Parameters
+        ----------
+        idx : Union[Tuple[int, ...], int]
+            Index tuple or integer to select the data. If fourth indices are provided the fourth selects a specific sub-volume, otherwise the data are taken from the first sub-volume.
+
+        Returns
+        -------
+        NDArray
+            The selected sub-volume or slice of data.
+
+        Raises
+        ------
+        IndexError
+            If the index is invalid.
+        ValueError
+            If the domain is invalid.
+        """
         if isinstance(idx, tuple) and len(idx) == 4:
             x, y, z, subvolume_idx  = idx
 
@@ -299,6 +500,14 @@ class Volume:
             raise IndexError("Invalid index. Must be a tuple of three elements (coordinates) or four elements (subvolume id and coordinates).")
         
     def grab_canonical_energy(self) -> int:
+        """
+        Get the canonical energy for the volume based on the scroll ID.
+
+        Returns
+        -------
+        int
+            The canonical energy value.
+        """
         if self.scroll_id == 1:
             return 54
         elif self.scroll_id == 2:
@@ -309,6 +518,14 @@ class Volume:
             return 70
         
     def grab_canonical_resolution(self) -> float:
+        """
+        Get the canonical resolution for the volume based on the scroll ID.
+
+        Returns
+        -------
+        float
+            The canonical resolution value.
+        """
         if self.scroll_id == 1:
             return 7.91
         elif self.scroll_id == 2:
@@ -319,24 +536,117 @@ class Volume:
             return 3.24
         
     def activate_caching(self) -> None:
+        """
+        Activate caching for the volume data.
+
+        This method enables caching and reloads the data with caching enabled.
+        """
         if self.domain != "local":
             if not self.cache:
                 self.cache = True
                 self.data = self.load_data()
 
     def deactivate_caching(self) -> None:
+        """
+        Deactivate caching for the volume data.
+
+        This method disables caching and reloads the data without caching.
+        """
         if self.domain != "local":
             if self.cache:
                 self.cache = False
                 self.data = self.load_data()
 
     def shape(self, subvolume_idx: int = 0) -> Tuple[int, ...]:
+        """
+        Get the shape of a specific sub-volume.
+
+        Parameters
+        ----------
+        subvolume_idx : int, default = 0
+            Index of the sub-volume to get the shape of.
+
+        Returns
+        -------
+        Tuple[int, ...]
+            The shape of the specified sub-volume.
+
+        Raises
+        ------
+        AssertionError
+            If the sub-volume index is invalid.
+        """
         assert 0 <= subvolume_idx < len(self.data), "Invalid subvolume index"
         return self.data[subvolume_idx].shape
 
   
 class Cube:
+    """
+    A class to represent a 3D instance annotated cube within a scroll.
+
+    Attributes
+    ----------
+    scroll_id : int
+        ID of the scroll.
+    energy : int
+        Energy value associated with the cube.
+    resolution : float
+        Resolution of the cube.
+    z : int
+        Z-coordinate of the cube.
+    y : int
+        Y-coordinate of the cube.
+    x : int
+        X-coordinate of the cube.
+    cache : bool
+        Indicates if caching is enabled.
+    cache_dir : Optional[os.PathLike]
+        Directory where cached files are stored.
+    normalize : bool
+        Indicates if the data should be normalized.
+    configs : str
+        Path to the configuration file.
+    volume_url : str
+        URL to access the volume data.
+    mask_url : str
+        URL to access the mask data.
+    volume : NDArray
+        Loaded volume data.
+    mask : NDArray
+        Loaded mask data.
+    max_dtype : Union[float, int]
+        Maximum value of the dtype if normalization is enabled.
+    """
     def __init__(self, scroll_id: int, energy: int, resolution: float, z: int, y: int, x: int, cache: bool = False, cache_dir : Optional[os.PathLike] = None, normalize: bool = False) -> None:
+        """
+        Initialize the Cube object.
+
+        Parameters
+        ----------
+        scroll_id : int
+            ID of the scroll.
+        energy : int
+            Energy value associated with the cube.
+        resolution : float
+            Resolution of the cube.
+        z : int
+            Z-coordinate of the cube.
+        y : int
+            Y-coordinate of the cube.
+        x : int
+            X-coordinate of the cube.
+        cache : bool, default = False
+            Indicates if caching is enabled.
+        cache_dir : Optional[os.PathLike], default = None
+            Directory where cached files are stored. If None the files will be saved in $HOME / vesuvius / annotated-instances
+        normalize : bool, default = False
+            Indicates if the data should be normalized.
+
+        Raises
+        ------
+        ValueError
+            If the URL cannot be found in the configuration.
+        """
         self.scroll_id = scroll_id
         install_path = get_installation_path()
         self.configs = os.path.join(install_path, 'vesuvius', 'configs', f'cubes.yaml')
@@ -346,7 +656,10 @@ class Cube:
         self.volume_url, self.mask_url = self.get_url_from_yaml()
         self.cache = cache
         if self.cache:
-            self.cache_dir = cache_dir
+            if cache_dir is not None:
+                self.cache_dir = Path(cache_dir)
+            else:
+                self.cache_dir = Path.home() / 'vesuvius' / 'annotated-instances'
             os.makedirs(self.cache_dir, exist_ok=True)
         self.normalize = normalize
 
@@ -356,6 +669,19 @@ class Cube:
             self.max_dtype = get_max_value(self.volume.dtype)
         
     def get_url_from_yaml(self) -> str:
+        """
+        Retrieve the URLs for the volume and mask data from the YAML configuration file.
+
+        Returns
+        -------
+        Tuple[str, str]
+            The URLs for the volume and mask data.
+
+        Raises
+        ------
+        ValueError
+            If the URLs cannot be found in the configuration.
+        """
         # Load the YAML file
         with open(self.configs, 'r') as file:
             data: Dict[str, Any] = yaml.safe_load(file)
@@ -373,6 +699,19 @@ class Cube:
         return volume_url, mask_url
     
     def load_data(self) -> Tuple[NDArray, NDArray]:
+        """
+        Load the data for the cube.
+
+        Returns
+        -------
+        Tuple[NDArray, NDArray]
+            A tuple containing the loaded volume and mask data.
+
+        Raises
+        ------
+        requests.RequestException
+            If there is an error downloading the data from the server.
+        """
         output = []
         for url in [self.volume_url, self.mask_url]:
             if self.cache:
@@ -421,6 +760,24 @@ class Cube:
 
 
     def __getitem__(self, idx: Tuple[int, ...]) -> NDArray:
+        """
+        Get a slice of the cube data.
+
+        Parameters
+        ----------
+        idx : Tuple[int, ...]
+            A tuple representing the coordinates (z, y, x) within the cube.
+
+        Returns
+        -------
+        NDArray
+            The selected data slice.
+
+        Raises
+        ------
+        IndexError
+            If the index is invalid.
+        """
         if isinstance(idx, tuple) and len(idx) == 3:
             zz, yy, xx = idx
 
@@ -433,13 +790,27 @@ class Cube:
         else:
             raise IndexError("Invalid index. Must be a tuple of three elements.")
     
-    def activate_caching(self) -> None:
+    def activate_caching(self, cache_dir: Optional[os.PathLike] = None) -> None:
+        """
+        Activate caching for the cube data.
+
+        Parameters
+        ----------
+        cache_dir : Optional[os.PathLike], default = None
+            Directory where cached files are stored.
+        """
         if not self.cache:
-            assert self.cache_dir is not None, "attribute cache_dir is None, define it first!"
+            if cache_dir is None:
+                self.cache_dir = Path.home() / 'vesuvius' / 'annotated-instances'
+            else:
+                self.cache_dir = Path(cache_dir)
             self.cache = True
             self.volume, self.mask = self.load_data()
 
     def deactivate_caching(self) -> None:
+        """
+        Deactivate caching for the cube data.
+        """
         if self.cache:
             self.cache = False
             self.volume, self.mask = self.load_data()

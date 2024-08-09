@@ -27,6 +27,35 @@ async def collect_subfolders(base_url: str, ignore_list: List[str]) -> List[str]
         return subfolders
     
 def update_list(base_url: str, base_url_cubes: str, ignore_list: Optional[List[str]] = None) -> None:
+    """
+    Scrape a website for directory structures and Zarr files, then update the configuration files.
+
+    This function scrapes a given base URL for a directory structure and Zarr files, then saves this data 
+    to YAML configuration files. It also updates the list of cubes in a separate configuration file.
+
+    Parameters
+    ----------
+    base_url : str
+        The base URL to scrape for directory structures and Zarr files.
+    base_url_cubes : str
+        The base URL to scrape for cubes folder structure.
+    ignore_list : Optional[List[str]], default = None
+        A list of regex patterns to ignore during scraping. If None, defaults to ignoring `.zarr` files.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    - This function makes use of asyncio to scrape websites concurrently.
+    - It updates the following YAML configuration files:
+      - 'directory_structure.yaml'
+      - 'scrolls.yaml'
+      - 'cubes.yaml'
+    - The part of the function that deals with cubes is currently designed to work with scroll 1 and energy 54 at resolution 7.91, but should 
+      be generalized in the future.
+    """
     install_path = get_installation_path()
     scroll_config = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
     directory_config = os.path.join(install_path, 'vesuvius', 'configs', f'directory_structure.yaml')
@@ -76,6 +105,19 @@ def update_list(base_url: str, base_url_cubes: str, ignore_list: Optional[List[s
     #print("Scrolls paths saved to 'scrolls.yaml'")
 
 def list_files() -> Dict:
+    """
+    Load and return the scrolls configuration data from a YAML file.
+
+    This function reads the updated 'scrolls.yaml' file and returns its contents as a dictionary.
+
+    To update the files run:
+    update_list("https://dl.ash2txt.org/other/dev/", "https://dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/seg-volumetric-labels/instance-annotated-cubes/")
+    
+    Returns
+    -------
+    Dict
+        A dictionary representing the scrolls configuration data.
+    """
     install_path = get_installation_path()
     scroll_config = os.path.join(install_path, 'vesuvius', 'configs', f'scrolls.yaml')
     with open(scroll_config, 'r') as file:
@@ -83,6 +125,19 @@ def list_files() -> Dict:
     return data
 
 def list_cubes() -> Dict:
+    """
+    Load and return the cubes configuration data from a YAML file.
+
+    This function reads the updated 'cubes.yaml' file and returns its contents as a dictionary.
+
+    To update the files run:
+    update_list("https://dl.ash2txt.org/other/dev/", "https://dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/seg-volumetric-labels/instance-annotated-cubes/")
+
+    Returns
+    -------
+    Dict
+        A dictionary representing the cubes configuration data.
+    """
     install_path = get_installation_path()
     cubes_config = os.path.join(install_path, 'vesuvius', 'configs', f'cubes.yaml')
     with open(cubes_config, 'r') as file:

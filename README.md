@@ -158,9 +158,6 @@ scroll.deactivate_caching()
 # With normalization
 scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91, normalize=True)
 
-# With local files
-scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91, domain="local", path="/path/to/54keV_7.91um.zarr")
-
 # Visualize which subvolumes are available
 scroll.meta()
 
@@ -186,7 +183,13 @@ data = scroll[15,12] # equal to scroll [15,12,:,0]
 data = scroll[20:300,12:18,20:40,2]
 
 ```
+#### With local files
+If you fully downloaded a scroll volume, or a segment, you can directly specify its local path on your device:
+```python
+scroll = Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91, domain="local", path="/path/to/54keV_7.91um.zarr")
+```
 
+#### Segments
 You can access segments in a similar fashion:
 ```python
 from vesuvius import Volume
@@ -205,7 +208,7 @@ Volume(
     energy: Optional[int] = None,
     resolution: Optional[float] = None,
     segment_id: Optional[int] = None,
-    cache: bool = False,
+    cache: bool = True,
     cache_pool: int = 1e10,
     normalize: bool = False,
     verbose: bool = True,
@@ -240,13 +243,15 @@ from vesuvius import Cube
 # Basic usage
 cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816, cache=True, cache_dir='/path/to/cache')  # with caching
 
+# if caching=True but cache_dir is not selected, the instances will be automatically saved in $HOME / vesuvius / annotated-instances
+
 cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816)  # without caching
 
 # With normalization
 cube = Cube(scroll_id=1, energy=54, resolution=7.91, z=2256, y=2512, x=4816, normalize=True)
 
-# Deactivate/activate caching (works only with remote repository)
-cube.activate_caching()  # make sure that a proper cache_dir is defined
+# Deactivate/activate caching
+cube.activate_caching(cache_dir=None)  # or define your own cache_dir
 cube.deactivate_caching()
 
 # To access the volume and the masks
@@ -262,7 +267,7 @@ Cube(
     z: int,
     y: int,
     x: int,
-    cache: bool = False,
+    cache: bool = True,
     cache_dir: Optional[os.PathLike] = None,
     normalize: bool = False
 )
@@ -288,7 +293,9 @@ Cube(
 - **Normalization**: The `normalize` parameter normalizes the data to the maximum value of the dtype.
 - **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
 
-## Introductory notebooks
-For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb).
+## 📓 Introductory Notebooks
+1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb) 📊.
 
-This [other jupyter notebook](notebooks/example2_cubes_bootstrap.ipynb) shows how to access to the instance annotated cubes.
+2. This [other jupyter notebook](notebooks/example2_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
+
+3. Load and visualize segments with ink labels, if available, with this [notebook](notebooks/example3_ink_detection.ipynb) ✒️.
