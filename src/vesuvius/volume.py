@@ -12,7 +12,7 @@ from PIL import Image
 from io import BytesIO
 from pathlib import Path
 from .setup.accept_terms import get_installation_path
-from .paths.utils import list_files
+from .paths.utils import list_files, is_aws_ec2_instance
 
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
@@ -85,7 +85,7 @@ class Volume:
         Data type of the volume.
     """
         
-    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = True, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: str = "dl.ash2txt", path: Optional[str] = None) -> None:
+    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = True, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: Optional[str] = None, path: Optional[str] = None) -> None:
         """
         Initialize the Volume object.
 
@@ -142,10 +142,17 @@ class Volume:
                     self.segment_id = None
                 self.scroll_id = scroll_id
 
-            assert domain in ["dl.ash2txt", "local"], "domain should be dl.ash2txt or local"
+            if domain is None:
+                if is_aws_ec2_instance():
+                    self.aws = True
+                    domain = "local"
+                else:
+                    self.aws = False
+                    domain = "dl.ash2txt"
+            else:
+                self.aws = False
 
-            if domain == "local":
-                assert path is not None
+            assert domain in ["dl.ash2txt", "local"], "domain should be dl.ash2txt or local"
 
             install_path = get_installation_path()
         
@@ -166,7 +173,7 @@ class Volume:
             self.cache_pool = cache_pool
             self.normalize = normalize
             self.verbose = verbose
-
+            
             if self.domain == "dl.ash2txt":
                 self.url = self.get_url_from_yaml()
                 self.metadata = self.load_ome_metadata()
@@ -175,7 +182,9 @@ class Volume:
                     self.max_dtype = get_max_value(self.data[0].dtype.numpy_dtype)
                 self.dtype = self.data[0].dtype.numpy_dtype
             elif self.domain == "local":
-                self.url = path
+                if self.aws is False:
+                    assert path is not None
+                    self.url = path
                 self.data = zarr.open(self.url, mode="r")
                 self.metadata = self.load_ome_metadata()
                 if self.normalize:

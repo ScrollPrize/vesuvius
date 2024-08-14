@@ -7,8 +7,10 @@ from .setup.accept_terms import is_colab
 from .paths.utils import update_list
 from .paths.utils import list_files
 from .paths.utils import list_cubes as cubes
+from .paths.local import update_local_list
+from .paths.utils import is_aws_ec2_instance
 
-__all__ = ["Volume", "Cube", "list_files", "cubes"]
+__all__ = ["Volume", "Cube", "list_files", "cubes", "is_aws_ec2_instance"]
 
 def check_agreement():
     if is_colab():
@@ -35,7 +37,18 @@ def check_agreement():
 check_agreement()
 
 # Update list of files on import
-try:
-    update_list("https://dl.ash2txt.org/other/dev/", "https://dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/seg-volumetric-labels/instance-annotated-cubes/")
-except:
-    print("Could not update the remote file paths.")
+if is_aws_ec2_instance():
+        try:
+            update_local_list("/mnt/scrolls", "/mnt/annotated-instances")
+            print("Updated local file paths.")
+        except Exception as e:
+            print(f"Could not update the local file paths: {e}")
+            try:
+                update_list("https://dl.ash2txt.org/other/dev/", "https://dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/seg-volumetric-labels/instance-annotated-cubes/")
+            except:
+                print("Could not update the remote file paths.")
+else:
+    try:
+        update_list("https://dl.ash2txt.org/other/dev/", "https://dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/seg-volumetric-labels/instance-annotated-cubes/")
+    except:
+        print("Could not update the remote file paths.")

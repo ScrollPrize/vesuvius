@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 import yaml
+import requests
 from ..setup.accept_terms import get_installation_path
 from typing import List, Optional, Dict, Tuple
 from .parser import get_directory_structure, find_zarr_files, list_subfolders
@@ -143,3 +144,22 @@ def list_cubes() -> Dict:
     with open(cubes_config, 'r') as file:
         data = yaml.safe_load(file)
     return data
+
+def is_aws_ec2_instance() -> bool:
+    """
+    Determine if the current system is an AWS EC2 instance.
+
+    Returns
+    -------
+    bool
+        True if running on an AWS EC2 instance, False otherwise.
+    """
+    try:
+        # Query EC2 instance metadata to check if running on AWS EC2
+        response = requests.get("http://169.254.169.254/latest/meta-data/", timeout=2)
+        if response.status_code == 200:
+            return True
+    except requests.RequestException:
+        return False
+
+    return False
