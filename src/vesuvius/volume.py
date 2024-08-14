@@ -14,6 +14,9 @@ from pathlib import Path
 from .setup.accept_terms import get_installation_path
 from .paths.utils import list_files, is_aws_ec2_instance
 
+# Remove the PIL image size limit
+Image.MAX_IMAGE_PIXELS = None
+
 # Function to get the maximum value of a dtype
 def get_max_value(dtype: np.dtype) -> Union[float, int]:
     """
