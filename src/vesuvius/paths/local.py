@@ -69,8 +69,8 @@ def categorize_zarr_files(tree: Dict[str, Optional[Dict]], base_dir: str) -> Dic
     zarr_files: Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]] = {}
 
     # Regex patterns for matching volume and segment paths
-    volume_pattern = re.compile(r'volumes[/\\](?P<intensity>\d+)(?=keV)keV_(?P<resolution>\d+\.\d{2})\.zarr')
-    segment_pattern = re.compile(r'segments[/\\](?P<intensity>\d+)(?=keV)keV_(?P<resolution>\d+\.\d{2})um[/\\](?P<segment_id>[^/\\]+)\.zarr')
+    volume_pattern = re.compile(r'volumes[/\\](?P<intensity>\d+)(?=keV)keV_(?P<resolution>\d+\.\d{2})(?=um)um\.zarr')
+    segment_pattern = re.compile(r'segments[/\\](?P<intensity>\d+)(?=keV)keV_(?P<resolution>\d+\.\d{2})(?=um)um[/\\](?P<segment_id>[^/\\]+)\.zarr')
     scroll_pattern = re.compile(r'(?P<scrollnumber>\d+)[/\\](?=volumes)volumes')
 
     for key in tree.keys():
@@ -152,7 +152,7 @@ def list_subfolders(directory: str) -> List[str]:
         for name in dirs:
             dir_path = os.path.join(relative_path, name)
             subfolders.append(dir_path)
-            print(f"Subfolder found: {dir_path}")
+            #print(f"Subfolder found: {dir_path}")
 
     return subfolders
 
@@ -185,7 +185,7 @@ def update_cubes_config(cubes_config: str, cubes_folders: List[str], base_dir_cu
     for folder in cubes_folders:
         folder_name = os.path.basename(folder)
         data[1][54][7.91][folder_name] = os.path.join(base_dir_cubes, folder)
-        print(f"Cube folder added to config: {folder_name}")
+        #print(f"Cube folder added to config: {folder_name}")
 
     save_yaml(cubes_config, data)
 
@@ -207,4 +207,4 @@ def save_yaml(file_path: str, data: Dict) -> None:
     """
     with open(file_path, 'w') as file:
         yaml.dump(data, file, default_flow_style=False)
-    print(f"YAML saved: {file_path}")
+    #print(f"YAML saved: {file_path}")

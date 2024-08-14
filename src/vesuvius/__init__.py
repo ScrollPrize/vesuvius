@@ -40,7 +40,7 @@ check_agreement()
 if is_aws_ec2_instance():
         try:
             update_local_list("/mnt/scrolls", "/mnt/annotated-instances")
-            print("Updated local file paths.")
+            #print("Updated local file paths.")
         except Exception as e:
             print(f"Could not update the local file paths: {e}")
             try:

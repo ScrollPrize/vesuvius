@@ -185,6 +185,8 @@ class Volume:
                 if self.aws is False:
                     assert path is not None
                     self.url = path
+                if path is None:
+                    self.url = self.get_url_from_yaml()
                 self.data = zarr.open(self.url, mode="r")
                 self.metadata = self.load_ome_metadata()
                 if self.normalize:
@@ -393,15 +395,23 @@ class Volume:
         """
         assert self.type == "segment", "Can download ink label only for segments."
         inklabel_url = f"{self.url[:-6]}_inklabels.png"
-        # Make a GET request to the URL to download the image
-        response = requests.get(inklabel_url)
 
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Open the image directly from the response content using PIL
-            self.inklabel = np.array(Image.open(BytesIO(response.content)))
+        if self.domain == "local":
+            # If domain is local, open the image from the local file path
+            if os.path.exists(inklabel_url):
+                self.inklabel = np.array(Image.open(inklabel_url))
+            else:
+                raise FileNotFoundError(f"File not found: {inklabel_url}")
         else:
-            print(f"Failed to download inklabel. Status code: {response.status_code}")
+            # Make a GET request to the URL to download the image
+            response = requests.get(inklabel_url)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Open the image directly from the response content using PIL
+                self.inklabel = np.array(Image.open(BytesIO(response.content)))
+            else:
+                print(f"Failed to download inklabel. Status code: {response.status_code}")
         
 
     def __getitem__(self, idx: Union[Tuple[int, ...],int]) -> NDArray:
@@ -663,13 +673,15 @@ class Cube:
         self.resolution = resolution
         self.z, self.y, self.x = z, y, x
         self.volume_url, self.mask_url = self.get_url_from_yaml()
-        self.cache = cache
-        if self.cache:
-            if cache_dir is not None:
-                self.cache_dir = Path(cache_dir)
-            else:
-                self.cache_dir = Path.home() / 'vesuvius' / 'annotated-instances'
-            os.makedirs(self.cache_dir, exist_ok=True)
+        self.aws = is_aws_ec2_instance()
+        if self.aws is False:
+            self.cache = cache
+            if self.cache:
+                if cache_dir is not None:
+                    self.cache_dir = Path(cache_dir)
+                else:
+                    self.cache_dir = Path.home() / 'vesuvius' / 'annotated-instances'
+                os.makedirs(self.cache_dir, exist_ok=True)
         self.normalize = normalize
 
         self.volume, self.mask = self.load_data()
@@ -723,45 +735,48 @@ class Cube:
         """
         output = []
         for url in [self.volume_url, self.mask_url]:
-            if self.cache:
-                # Extract the relevant path after "instance-annotated-cubes"
-                path_after_finished_cubes = url.split('instance-annotated-cubes/')[1]
-                # Extract the directory structure and the filename
-                dir_structure, filename = os.path.split(path_after_finished_cubes)
+            if self.aws:
+                array, _ = nrrd.read(url)
+            else:
+                if self.cache:
+                    # Extract the relevant path after "instance-annotated-cubes"
+                    path_after_finished_cubes = url.split('instance-annotated-cubes/')[1]
+                    # Extract the directory structure and the filename
+                    dir_structure, filename = os.path.split(path_after_finished_cubes)
 
-                # Create the full directory path in the temp_dir
-                full_temp_dir_path = os.path.join(self.cache_dir, dir_structure)
+                    # Create the full directory path in the temp_dir
+                    full_temp_dir_path = os.path.join(self.cache_dir, dir_structure)
 
-                # Make sure the directory structure exists
-                os.makedirs(full_temp_dir_path, exist_ok=True)
+                    # Make sure the directory structure exists
+                    os.makedirs(full_temp_dir_path, exist_ok=True)
 
-                # Create the full path for the temporary file
-                temp_file_path = os.path.join(full_temp_dir_path, filename)
+                    # Create the full path for the temporary file
+                    temp_file_path = os.path.join(full_temp_dir_path, filename)
 
-                # Check if the file already exists in the cache
-                if os.path.exists(temp_file_path):
-                    # Read the NRRD file from the cache
-                    array, _ = nrrd.read(temp_file_path)
-
-                else:
-                    # Download the remote file
-                    response = requests.get(url)
-                    response.raise_for_status()  # Ensure we notice bad responses
-                    # Write the downloaded content to the temporary file with the same directory structure and filename
-                    with open(temp_file_path, 'wb') as tmp_file:
-                        tmp_file.write(response.content)
-
+                    # Check if the file already exists in the cache
+                    if os.path.exists(temp_file_path):
+                        # Read the NRRD file from the cache
                         array, _ = nrrd.read(temp_file_path)
 
-            else:
-                response = requests.get(url)
-                response.raise_for_status()  # Ensure we notice bad responses
-                with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                    tmp_file.write(response.content)
-                    temp_file_path = tmp_file.name
-                    # Read the NRRD file from the temporary file
+                    else:
+                        # Download the remote file
+                        response = requests.get(url)
+                        response.raise_for_status()  # Ensure we notice bad responses
+                        # Write the downloaded content to the temporary file with the same directory structure and filename
+                        with open(temp_file_path, 'wb') as tmp_file:
+                            tmp_file.write(response.content)
 
-                    array, _ = nrrd.read(temp_file_path)
+                            array, _ = nrrd.read(temp_file_path)
+
+                else:
+                    response = requests.get(url)
+                    response.raise_for_status()  # Ensure we notice bad responses
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                        tmp_file.write(response.content)
+                        temp_file_path = tmp_file.name
+                        # Read the NRRD file from the temporary file
+
+                        array, _ = nrrd.read(temp_file_path)
 
             output.append(array)
 
