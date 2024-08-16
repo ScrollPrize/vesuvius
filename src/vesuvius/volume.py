@@ -397,14 +397,14 @@ class Volume:
             If the volume type is not 'segment'.
         """
         assert self.type == "segment", "Can download ink label only for segments."
-        inklabel_url = f"{self.url[:-6]}_inklabels.png"
+        inklabel_url = os.path.abspath(f"{self.url[:-5]}_inklabels.png")
 
         if self.domain == "local":
             # If domain is local, open the image from the local file path
             if os.path.exists(inklabel_url):
                 self.inklabel = np.array(Image.open(inklabel_url))
             else:
-                raise FileNotFoundError(f"File not found: {inklabel_url}")
+                print(f"File not found: {inklabel_url}")
         else:
             # Make a GET request to the URL to download the image
             response = requests.get(inklabel_url)
