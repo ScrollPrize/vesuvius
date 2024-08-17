@@ -1,7 +1,6 @@
 /build/
 /src/vesuvius.egg-info/
 /dev_jupyter/
-/tests/
 .venv/
 __pycache__
 */__pycache__/*

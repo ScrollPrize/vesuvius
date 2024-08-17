@@ -6,42 +6,42 @@ From [Vesuvius Challenge](https://scrollprize.org), a Python library for accessi
 ```python
 import vesuvius
 
-scroll1 = vesuvius.Volume("Scroll1")
-img = scroll[1000,:,:,3]
+scroll = vesuvius.Volume("Scroll1")
+img = scroll[1000,:,:]
 
 plt.imshow(img)
 ```
 
 <img src="img/slice.png" alt="drawing" width="200"/>
 
-Data is streamed in the background, only serving the requested portions.
+Data is streamed in the background, only serving the requested regions.
 
-The library provides tools for accessing, managing, and manipulating high-resolution volumetric and segmented data related to the Vesuvius Challenge. It supports both remote data retrieval and local file handling, with options for data caching and normalization.
+The library provides tools for accessing, managing, and manipulating high-resolution volumetric data related to Vesuvius Challenge. It supports both remote and local data, with options for caching and normalization.
 
-### What It Does
-- **Data Retrieval**: Fetches volumetric scroll data, surface volume of segmented areas and annotated volumetric cubes from remote repositories or local files.
-- **Data Listing**: Traverses the remote repository and automatically update a list of available data.
-- **Data Caching**: Supports caching of data to improve performance when accessing remote repositories.
+### What it does
+- **Data retrieval**: Fetches volumetric scroll data, surface volumes of scroll segments, and annotated volumetric instance segmentation labels. Remote repositories and local files are supported.
+- **Data listing**: Lists the available data on [our data server](dl.ash2txt.org).
+- **Data caching**: Caches fetched data to improve performance when accessing remote repositories.
 - **Normalization**: Provides options to normalize data values.
-- **Multiresolution Handling**: Manages and accesses data at multiple resolutions.
+- **Multiresolution**: Accesses and manages data at multiple image resolutions.
 
-### What It Doesn't Do
-- **Remote Data Modification**: The library does not support modifying the original data.
-- **Complex Analysis**: While it provides access to data, it does not include built-in tools for complex data analysis or visualization.
-- **Unsupported Data Types**: Only supports specific data types (volumetric and segmented data in specific formats like Zarr and NRRD). Other data formats are not supported.
+### What it doesn't do
+- **Remote data modification**: The read-only library does not support modifying the original data.
+- **Complex analysis**: While it provides access to data, it does not include built-in tools for complex data analysis or visualization.
 
 ## Installation
+
 ```sh
 $ pip install vesuvius
 ```
-
-## Usage
 Before using the library for the first time, accept the license terms:
 ```sh
 $ vesuvius.accept_terms --yes
 ```
 
-After this the library can be imported in Python:
+## Usage
+
+The library can be imported in Python:
 ```python
 import vesuvius
 ```
@@ -136,10 +136,10 @@ Similarly to `list_files` the output of `cubes` is a dictionary:
 ```
 `z_y_x` are the coordinates in the relative scroll volume of the origin of the reference frame of the selected cube.
 
-### Importing and Using `Volume`
+### Importing and using `Volume`
 The `Volume` class is used for accessing volumetric data, both for scrolls and surface volume of segments.
 
-#### Example Usage
+#### Example usage
 ```python
 from vesuvius import Volume
 # Basic usage
@@ -233,10 +233,10 @@ Volume(
 - **deactivate_caching()**: Deactivates caching.
 - **shape(subvolume_idx: int = 0)**: Returns the shape of the specified subvolume.
 
-### Importing and Using `Cube`
+### Importing and using `Cube`
 The `Cube` class is used for accessing segmented cube data.
 
-#### Example Usage
+#### Example usage
 ```python
 from vesuvius import Cube
 
@@ -287,13 +287,13 @@ Cube(
 - **activate_caching()**: Activates caching.
 - **deactivate_caching()**: Deactivates caching.
 
-## Additional Notes
+## Additional notes
 - **Terms Acceptance**: Ensure that the terms are accepted before using the library.
 - **Caching**: Caching is only supported with the remote repository.
 - **Normalization**: The `normalize` parameter normalizes the data to the maximum value of the dtype.
 - **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
 
-## 📓 Introductory Notebooks
+## 📓 Introductory notebooks
 1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb) 📊.
 
 2. This [other jupyter notebook](notebooks/example2_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
