@@ -50,37 +50,19 @@ def get_directory_structure(base_dir: str):
     #print(f"Final directory tree: {directory_tree}")
     return directory_tree
 
-def categorize_zarr_files(tree: Dict[str, Optional[Dict]], base_dir: str) -> Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]]:
-    """
-    Categorize zarr files into a nested structure based on scroll number, intensity, and resolution.
-
-    Parameters
-    ----------
-    tree : Dict[str, Optional[Dict]]
-        The directory structure as a nested dictionary.
-    base_dir : str
-        The base directory for traversal.
-
-    Returns
-    -------
-    Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]]
-        A nested dictionary categorized by scroll number, intensity, and resolution.
-    """
+def categorize_zarr_files(tree, base_dir):
     zarr_files: Dict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]] = {}
 
     # Regex patterns for matching volume and segment paths
-    volume_pattern = re.compile(r'volumes[/\\](?P<intensity>\d+)(?=keV)keV_(?P<resolution>\d+\.\d{2})(?=um)um\.zarr')
-    segment_pattern = re.compile(r'segments[/\\](?P<intensity>\d+)(?=keV)keV_(?P<resolution>\d+\.\d{2})(?=um)um[/\\](?P<segment_id>[^/\\]+)\.zarr')
-    scroll_pattern = re.compile(r'(?P<scrollnumber>\d+)[/\\](?=volumes)volumes')
+    volume_pattern = re.compile(r'volumes[/\\](?P<intensity>\d+)(?=keV|um)(?P<unit>[a-zA-Z]+)_(?P<resolution>\d+\.\d{2})(?P<suffix>[a-zA-Z]*)\.zarr')
+    segment_pattern = re.compile(r'segments[/\\](?P<intensity>\d+)(?=keV|um)(?P<unit>[a-zA-Z]+)_(?P<resolution>\d+\.\d{2})(?P<suffix>[a-zA-Z]*)[/\\](?P<segment_id>[^/\\]+)\.zarr')
+    scroll_pattern = re.compile(r'(?P<scrollnumber>\d+)[/\\](?=volumes|segments)(volumes|segments)')
 
     for key in tree.keys():
         full_path = os.path.join(base_dir, key)
-        #print(f"Processing path: {full_path}")
-
         # Check for scroll number
         scroll_match = scroll_pattern.search(key)
         if not scroll_match:
-            #print(f"No scroll match for: {full_path}")
             continue
         scrollnumber = scroll_match.group('scrollnumber')
 
@@ -101,7 +83,6 @@ def categorize_zarr_files(tree: Dict[str, Optional[Dict]], base_dir: str) -> Dic
                 zarr_files[scrollnumber][intensity][resolution] = {'volume': full_path, 'segments': {}}
             else:
                 zarr_files[scrollnumber][intensity][resolution]['volume'] = full_path
-            #print(f"Categorized volume: {full_path}")
             continue
 
         # Check for segment matches
@@ -118,9 +99,7 @@ def categorize_zarr_files(tree: Dict[str, Optional[Dict]], base_dir: str) -> Dic
                 zarr_files[scrollnumber][intensity][resolution] = {'volume': None, 'segments': {}}
             # Add the segment
             zarr_files[scrollnumber][intensity][resolution]['segments'][segment_id] = full_path
-            #print(f"Categorized segment: {full_path}")
 
-    #print(f"Final categorized zarr_files structure: {zarr_files}")
     return zarr_files
 
 
