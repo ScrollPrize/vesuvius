@@ -294,8 +294,9 @@ Cube(
 - **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
 
 ## 📓 Introductory Notebooks
-1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb) 📊.
+1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example1_data_access.ipynb) 📊.
 
-2. This [other jupyter notebook](notebooks/example2_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
+2. This [other jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example2_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
 
-3. Load and visualize segments with ink labels, if available, with this [notebook](notebooks/example3_ink_detection.ipynb) ✒️.
+3. Load and visualize segments with ink labels, if available, with this [notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example3_ink_detection.ipynb) ✒️.
+
