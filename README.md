@@ -18,6 +18,10 @@ Data is streamed in the background, only serving the requested portions.
 
 The library provides tools for accessing, managing, and manipulating high-resolution volumetric and segmented data related to the Vesuvius Challenge. It supports both remote data retrieval and local file handling, with options for data caching and normalization.
 
+**Disclaimer 1:** This library is currently in the testing phase. Features and functionalities are subject to change.
+
+**Disclaimer 2:** Not all the data stored on our data repository is currently available. We will be releasing new data continuously.
+
 ### What It Does
 - **Data Retrieval**: Fetches volumetric scroll data, surface volume of segmented areas and annotated volumetric cubes from remote repositories or local files.
 - **Data Listing**: Traverses the remote repository and automatically update a list of available data.
