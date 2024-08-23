@@ -5,6 +5,7 @@ From [Vesuvius Challenge](https://scrollprize.org), a Python library for accessi
 
 ```python
 import vesuvius
+import matplotlib.pyplot as plt
 
 scroll = vesuvius.Volume("Scroll1")
 img = scroll[1000,:,:]
@@ -40,6 +41,13 @@ Before using the library for the first time, accept the license terms:
 ```sh
 $ vesuvius.accept_terms --yes
 ```
+
+## 📓 Introductory notebooks
+1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example1_data_access.ipynb) 📊.
+
+2. Load and visualize segments with ink labels, if available, with this [notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example2_ink_detection.ipynb) ✒️.
+
+3. This [other jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example3_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
 
 ## Usage
 
@@ -290,19 +298,8 @@ Cube(
 - **deactivate_caching()**: Deactivates caching.
 
 ## Additional notes
-- **Terms Acceptance**: Ensure that the terms are accepted before using the library.
+- **Terms acceptance**: Ensure that the terms are accepted before using the library.
 - **Caching**: Caching is only supported with the remote repository.
 - **Normalization**: The `normalize` parameter normalizes the data to the maximum value of the dtype.
-- **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
+- **Local files**: For local files, provide the appropriate path in the `Volume` constructor.
 
-<<<<<<< HEAD
-## 📓 Introductory notebooks
-1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb) 📊.
-=======
-## 📓 Introductory Notebooks
-1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example1_data_access.ipynb) 📊.
->>>>>>> 08f64ffc912525c095cd0c358cd75340f05ed592
-
-2. Load and visualize segments with ink labels, if available, with this [notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example2_ink_detection.ipynb) ✒️.
-
-3. This [other jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example3_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
