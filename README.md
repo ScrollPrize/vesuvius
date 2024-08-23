@@ -19,16 +19,25 @@ Data is streamed in the background, only serving the requested regions.
 
 The library provides tools for accessing, managing, and manipulating high-resolution volumetric data related to Vesuvius Challenge. It supports both remote and local data, with options for caching and normalization.
 
-> ⚠️ This library is in beta and the interface may change. Not all Vesuvius Challenge data is currently available - data will continue to be added to the library.
+> ⚠️ `vesuvius` is in beta and the interface may change. Not all Vesuvius Challenge data is currently available - data will continue to be added to the library.
 
-### What it does
+## 📓 Introductory notebooks
+To get started, we recommend these notebooks that jump right in:
+
+1. 📊 [Scroll Data Access](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example1_data_access.ipynb): an introduction to accessing scroll data using a few lines of Python!
+
+2. ✒️ [Ink Detection](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example2_ink_detection.ipynb): load and visualize segments with ink labels, and train models to detect ink in CT.
+
+3. This [other jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example3_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
+
+## `vesuvius` does:
 - **Data retrieval**: Fetches volumetric scroll data, surface volumes of scroll segments, and annotated volumetric instance segmentation labels. Remote repositories and local files are supported.
 - **Data listing**: Lists the available data on [our data server](dl.ash2txt.org).
 - **Data caching**: Caches fetched data to improve performance when accessing remote repositories.
 - **Normalization**: Provides options to normalize data values.
 - **Multiresolution**: Accesses and manages data at multiple image resolutions.
 
-### What it doesn't do
+## `vesuvius` doesn't do:
 - **Remote data modification**: The read-only library does not support modifying the original data.
 - **Complex analysis**: While it provides access to data, it does not include built-in tools for complex data analysis or visualization.
 
@@ -40,13 +49,6 @@ Then, before using the library for the first time, accept the license terms:
 $ pip install vesuvius
 $ vesuvius.accept_terms --yes
 ```
-
-## 📓 Introductory notebooks
-1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example1_data_access.ipynb) 📊.
-
-2. Load and visualize segments with ink labels, if available, with this [notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example2_ink_detection.ipynb) ✒️.
-
-3. This [other jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example3_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
 
 ## Usage
 
