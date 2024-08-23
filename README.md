@@ -18,6 +18,8 @@ Data is streamed in the background, only serving the requested regions.
 
 The library provides tools for accessing, managing, and manipulating high-resolution volumetric data related to Vesuvius Challenge. It supports both remote and local data, with options for caching and normalization.
 
+> ⚠️ This library is in beta and the interface may change. Not all Vesuvius Challenge data is currently available - data will continue to be added to the library.
+
 ### What it does
 - **Data retrieval**: Fetches volumetric scroll data, surface volumes of scroll segments, and annotated volumetric instance segmentation labels. Remote repositories and local files are supported.
 - **Data listing**: Lists the available data on [our data server](dl.ash2txt.org).
@@ -293,9 +295,14 @@ Cube(
 - **Normalization**: The `normalize` parameter normalizes the data to the maximum value of the dtype.
 - **Local Files**: For local files, provide the appropriate path in the `Volume` constructor.
 
+<<<<<<< HEAD
 ## 📓 Introductory notebooks
 1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](notebooks/example1_data_access.ipynb) 📊.
+=======
+## 📓 Introductory Notebooks
+1.  For an example of how to use the `Volume` class, please play with this [jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example1_data_access.ipynb) 📊.
+>>>>>>> 08f64ffc912525c095cd0c358cd75340f05ed592
 
-2. This [other jupyter notebook](notebooks/example2_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
+2. Load and visualize segments with ink labels, if available, with this [notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example2_ink_detection.ipynb) ✒️.
 
-3. Load and visualize segments with ink labels, if available, with this [notebook](notebooks/example3_ink_detection.ipynb) ✒️.
+3. This [other jupyter notebook](https://colab.research.google.com/github/ScrollPrize/vesuvius/blob/main/notebooks/example3_cubes_bootstrap.ipynb) 🧩 shows how to access the instance-annotated cubes with the `Cube` class.
