@@ -34,11 +34,10 @@ The library provides tools for accessing, managing, and manipulating high-resolu
 
 ## Installation
 
+`vesuvius` can be installed with `pip`.
+Then, before using the library for the first time, accept the license terms:
 ```sh
 $ pip install vesuvius
-```
-Before using the library for the first time, accept the license terms:
-```sh
 $ vesuvius.accept_terms --yes
 ```
 
