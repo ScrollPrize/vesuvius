@@ -19,6 +19,8 @@ Data is streamed in the background, only serving the requested regions.
 
 The library provides tools for accessing, managing, and manipulating high-resolution volumetric data related to Vesuvius Challenge. It supports both remote and local data, with options for caching and normalization.
 
+For a similar library in C, see [vesuvius-c](https://github.com/ScrollPrize/vesuvius-c).
+
 > ⚠️ `vesuvius` is in beta and the interface may change. Not all Vesuvius Challenge data is currently available - data will continue to be added to the library.
 
 ## 📓 Introductory notebooks
