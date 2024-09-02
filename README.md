@@ -34,7 +34,7 @@ To get started, we recommend these notebooks that jump right in:
 
 ## `vesuvius` does:
 - **Data retrieval**: Fetches volumetric scroll data, surface volumes of scroll segments, and annotated volumetric instance segmentation labels. Remote repositories and local files are supported.
-- **Data listing**: Lists the available data on [our data server](dl.ash2txt.org).
+- **Data listing**: Lists the available data on [our data server](https://dl.ash2txt.org).
 - **Data caching**: Caches fetched data to improve performance when accessing remote repositories.
 - **Normalization**: Provides options to normalize data values.
 - **Multiresolution**: Accesses and manages data at multiple image resolutions.
