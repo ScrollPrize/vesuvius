@@ -84,7 +84,7 @@ async def find_zarr_files(tree: Dict[str, Optional[Dict]], url: str, session: ai
         elif value is None:
             volume_match = volume_pattern.search(url + key)
             segment_match = segment_pattern.search(url + key)
-            scroll_match = re.search(r'scrolls/(?P<scrollnumber>\d+)/', url)
+            scroll_match = re.search(r'scrolls/(?P<scrollnumber>\d+[a-zA-Z]?)/', url)
             if volume_match and scroll_match:
                 scrollnumber = scroll_match.group('scrollnumber')
                 intensity = volume_match.group('intensity')

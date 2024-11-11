@@ -88,7 +88,7 @@ class Volume:
         Data type of the volume.
     """
         
-    def __init__(self, type: Union[str,int], scroll_id: Optional[int] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = True, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: Optional[str] = None, path: Optional[str] = None) -> None:
+    def __init__(self, type: Union[str,int], scroll_id: Optional[Union[int, str]] = None, energy: Optional[int] = None, resolution: Optional[float] = None, segment_id: Optional[int] = None, cache: bool = True, cache_pool: int = 1e10, normalize: bool = False, verbose : bool = False, domain: Optional[str] = None, path: Optional[str] = None) -> None:
         """
         Initialize the Volume object.
 
@@ -96,7 +96,7 @@ class Volume:
         ----------
         type : Union[str, int]
             The type of volume, either a scroll or a segment. One can also feed directly the canonical scroll, e.g. "Scroll1" or the segment timestamp.
-        scroll_id : Optional[int], default = None
+        scroll_id : Optional[Union[int, str]], default = None
             ID of the scroll.
         energy : Optional[int], default = None
             Energy value associated with the volume.
@@ -130,9 +130,12 @@ class Volume:
                 segment_id = int(type)
                 type = "segment"
                 
-            if type.startswith("scroll") and (len(type) > 6) and (type[6:].isdigit()):
+            if type.startswith("scroll") and (len(type) > 6):
                 self.type = "scroll"
-                self.scroll_id = int(type[6:])
+                if (type[6:].isdigit()):
+                    self.scroll_id = int(type[6:])
+                else:
+                    self.scroll_id = str(type[6:])
             
             else:
                 assert type in ["scroll", "segment"], "type should be either 'scroll', 'scroll#' or 'segment'"
@@ -206,6 +209,7 @@ class Volume:
         except Exception as e:
             print(f"An error occurred while initializing the Volume class: {e}", end="\n")
             print('Load the canonical scroll 1 with Volume(type="scroll", scroll_id=1, energy=54, resolution=7.91)', end="\n")
+            print('If loading another part of the same physical scroll use for instance Volume(type="scroll", scroll_id="1b", energy=54, resolution=7.91)', end="\n")
             print('Load a segment (e.g. 20230827161847) with Volume(type="segment", scroll_id=1, energy=54, resolution=7.91, segment_id=20230827161847)')
             raise
     
@@ -534,8 +538,14 @@ class Volume:
         """
         if self.scroll_id == 1:
             return 54
+        elif self.scroll_id == "1b":
+            return 54
         elif self.scroll_id == 2:
             return 54
+        elif self.scroll_id == "2b":
+            return 54
+        elif self.scroll_id == "2c":
+            return 88
         elif self.scroll_id == 3:
             return 53
         elif self.scroll_id == 4:
@@ -552,7 +562,13 @@ class Volume:
         """
         if self.scroll_id == 1:
             return 7.91
+        elif self.scroll_id == "1b":
+            return 7.91
         elif self.scroll_id == 2:
+            return 7.91
+        elif self.scroll_id == "2b":
+            return 7.91
+        elif self.scroll_id == "2c":
             return 7.91
         elif self.scroll_id == 3:
             return 3.24
