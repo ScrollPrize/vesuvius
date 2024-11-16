@@ -33,7 +33,7 @@ async def get_directory_structure(url: str, session: aiohttp.ClientSession, igno
     
     nested_directories = await asyncio.gather(*tasks)
     for idx, href in enumerate(hrefs):
-        if not re.search(zarr_pattern, href):
+        if not re.search(zarr_pattern, href) and (idx < len(nested_directories)):
             directory_tree[href] = nested_directories[idx]
 
     return directory_tree
