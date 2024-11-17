@@ -20,7 +20,7 @@ class CustomInstallCommand(install):
 
 setup(
     name='vesuvius',
-    version='0.1.7b',
+    version='0.1.8',
     package_dir = {"": "src"},
     packages=find_packages(where="src"),
     install_requires=[
