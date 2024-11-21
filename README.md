@@ -1,3 +1,5 @@
+> **_NOTE:_** Now maintained at https://github.com/ScrollPrize/villa/tree/main/vesuvius (this repository archived)
+
 # vesuvius
 From [Vesuvius Challenge](https://scrollprize.org), a Python library for accessing CT scans of ancient scrolls.
 
